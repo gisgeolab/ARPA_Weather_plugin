@@ -279,10 +279,11 @@ class arpatest:
                 action)
             self.iface.removeToolBarIcon(action)
 
+
     def test_function(self):
         print("Works!")
 
-    def connect_ARPA_api(self, token: str):
+    def connect_ARPA_api(self, token=""):
         """
         Function to connect to ARPA API. Unauthenticated client only works with public data sets, and there is a limit for the requests.
         Note 'None' in place of application token, and no username or password.
@@ -393,8 +394,8 @@ class arpatest:
 
     def run_startup_datesAPI(self):
         try:
-            arpa_token = "riTLzYVRVdDaQtUkxDDaHRgJi"
-            client = self.connect_ARPA_api(arpa_token)
+
+            client = self.connect_ARPA_api()
 
             start_date_API, end_date_API = self.req_ARPA_start_end_date_API(
                 client)
@@ -402,6 +403,7 @@ class arpatest:
             label_name_end = end_date_API.strftime("%Y-%m-%d %H:%M:%S")
             self.dlg.label_startAPIdate.setText(label_name_start)
             self.dlg.label_endAPIdate.setText(label_name_end)
+
         except requests.exceptions.RequestException as e:
             QMessageBox.warning(self.dlg, "Error", str(e))
 
@@ -501,6 +503,9 @@ class arpatest:
         self.dlg.cbSensorsType.addItems(
             [str(sensor) for sensor in sensors_types])
 
+        self.dlg.labelLinkDoc.setText('<a href="https://github.com/capizziemanuele/ARPA_Weather_plugin">GitHub Doc</a>')
+        self.dlg.labelLinkDoc.setOpenExternalLinks(True)
+
         # modifiy initial widgets
         self.run_startup_datesAPI()
 
@@ -522,7 +527,8 @@ class arpatest:
         if result:
 
             # Create client
-            arpa_token = "riTLzYVRVdDaQtUkxDDaHRgJi"
+            arpa_token = self.dlg.leToken.text()
+
             client = self.connect_ARPA_api(arpa_token)
 
             with client:
