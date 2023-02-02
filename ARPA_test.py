@@ -349,7 +349,7 @@ class arpatest:
         Raises:
             Exception: If the start and end dates are not in the same year.
         """
-        #Get the year of the start and end dates
+        # Get the year of the start and end dates
         year = start_datetime.date().year
 
         return year, start_datetime.date(), end_datetime.date()
@@ -426,10 +426,6 @@ class arpatest:
         start_date = start_date.strftime("%Y-%m-%dT%H:%M:%S.%f")
         end_date = end_date.strftime("%Y-%m-%dT%H:%M:%S.%f")
 
-        print("--- Starting request to ARPA API ---")
-
-        t = time.time()
-
         # Query data
         query = """
         select
@@ -439,10 +435,6 @@ class arpatest:
 
         # Get time series and evaluate time spent to request them
         time_series = client.get(weather_sensor_id, query=query)
-
-        print(time_series)
-        elapsed = time.time() - t
-        print("Time used for requesting the data from ARPA API: ", elapsed)
 
         # Create dataframe
         df = pd.DataFrame(time_series, columns=['idsensore', 'data', 'valore'])
@@ -462,7 +454,7 @@ class arpatest:
 
         return df
 
-    def aggregate_group_data(self, df, agg="mean"):
+    def aggregate_group_data(self, df):
         """
         Aggregates ARPA data using statistical aggregration function (mean, max, min etc.). The dataframe is grouped by sensor id (idsensore).
 
@@ -475,12 +467,9 @@ class arpatest:
                     df(dataframe): computed filtered and aggregated dask dataframe
         """
 
-        print("Number of sensors available in the dataframe: ",
-              len(df.idsensore.unique()))
-        print("Aggregation function: " + agg)
-        df = df.set_index('data')
+        # df = df.set_index('data') not necessary if not resampling
 
-        grouped = df.groupby('idsensore')['valore'].agg(agg)
+        grouped = df.groupby('idsensore')['valore'].agg(['mean', 'max', 'min', 'std', 'count'])
         grouped = grouped.reset_index()
 
         return grouped
@@ -498,7 +487,6 @@ class arpatest:
 
 # --- RUN ------------
 
-
     def run(self):
         """Run method that performs all the real work"""
 
@@ -508,7 +496,6 @@ class arpatest:
             self.first_start = False
             self.dlg = arpatestDialog()
 
-
         # Add sensors type
         self.dlg.cbSensorsType.clear()
         self.dlg.cbSensorsType.addItems(
@@ -517,7 +504,7 @@ class arpatest:
         # modifiy initial widgets
         self.run_startup_datesAPI()
 
-        #Options for the calendar
+        # Options for the calendar
         today = QDate.currentDate()
         self.dlg.dtStartTime.setDisplayFormat("dd-MM-yyyy hh:mm:ss")
         self.dlg.dtEndTime.setDisplayFormat("dd-MM-yyyy hh:mm:ss")
@@ -525,7 +512,6 @@ class arpatest:
         self.dlg.dtEndTime.setDate(today)
         self.dlg.dtStartTime.setCalendarPopup(True)
         self.dlg.dtEndTime.setCalendarPopup(True)
-
 
         # show the dialog
         self.dlg.show()
@@ -535,49 +521,44 @@ class arpatest:
 
         if result:
 
-            print("---------- Start test ----------")
-
-            #Create client
+            # Create client
             arpa_token = "riTLzYVRVdDaQtUkxDDaHRgJi"
             client = self.connect_ARPA_api(arpa_token)
 
             with client:
-                #Dataframe containing sensors info
+                # Dataframe containing sensors info
                 sensors_df = self.ARPA_sensors_info(client)
 
-                #Get the selected sensor from the gui
+                # Get the selected sensor from the gui
                 sensor_sel = self.dlg.cbSensorsType.currentText()
 
-                #Filter the sensors depending on the "tipologia" field (sensor type)
+                # Filter the sensors depending on the "tipologia" field (sensor type)
                 sensors_list = (
                     sensors_df.loc[sensors_df['tipologia'] == sensor_sel]).idsensore.tolist()
 
-                print(("Selected sensor: {sel}").format(sel=sensor_sel))
-                print(("Number of selected sensor: {sens_len}").format(
-                    sens_len=len(sensors_list)))
-                
-                #Get the start and the end date from the gui
+                # Get the start and the end date from the gui
                 start_date = self.dlg.dtStartTime.dateTime().toPyDateTime()
                 end_date = self.dlg.dtEndTime.dateTime().toPyDateTime()
-                #Check if the dates are valid
+                # Check if the dates are valid
                 year, start_date, end_date = self.check_dates(
                     start_date, end_date)
 
                 # Check that the start and end dates are in the same year
                 if start_date.year != end_date.year:
-                    QMessageBox.warning(None, "Invalid Date Range", "Dates must be in the same year!")
+                    QMessageBox.warning(
+                        None, "Invalid Date Range", "Dates must be in the same year!")
                     return
                 elif start_date > end_date:
-                    QMessageBox.warning(None, "Invalid Date Range", "Start date bust be before end date")
+                    QMessageBox.warning(
+                        None, "Invalid Date Range", "Start date bust be before end date")
                     return
 
-                print(year, start_date, end_date)
 
                 sensors_values = self.req_ARPA_data_API(
                     client, start_date, end_date, sensors_list)
 
                 sensor_test_agg = self.aggregate_group_data(
-                    sensors_values, "mean")
+                    sensors_values)
 
                 merged_df = pd.merge(
                     sensor_test_agg, sensors_df, on='idsensore')
@@ -595,7 +576,7 @@ class arpatest:
                     "Point?crs=EPSG:4326", sensor_sel, "memory")
 
                 # Add fields for latitude and longitude
-                layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("valore", QVariant.Double),
+                layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("mean", QVariant.Double), QgsField("max", QVariant.Double), QgsField("min", QVariant.Double), QgsField("std", QVariant.Double), QgsField("count", QVariant.Int),
                                                     QgsField(
                                                         "tipologia", QVariant.String),
                                                     QgsField("unit_dimisura", QVariant.String), QgsField(
@@ -617,7 +598,7 @@ class arpatest:
                     point = QgsPointXY(row['lng'], row['lat'])
                     feature = QgsFeature()
                     feature.setGeometry(QgsGeometry.fromPointXY(point))
-                    feature.setAttributes([QVariant(row['idsensore']), QVariant(row['valore']), QVariant(row['tipologia']), QVariant(row['unit_dimisura']), QVariant(row['idstazione']), QVariant(row['nomestazione']),
+                    feature.setAttributes([QVariant(row['idsensore']), QVariant(row['mean']), QVariant(row['max']), QVariant(row['min']), QVariant(row['std']), QVariant(row['count']), QVariant(row['tipologia']), QVariant(row['unit_dimisura']), QVariant(row['idstazione']), QVariant(row['nomestazione']),
                                           QVariant(row['quota']), QVariant(row['provincia']), QVariant(
                                               row['datastart']), QVariant(row['storico']), QVariant(row['cgb_nord']),
                                            QVariant(row['cgb_est']), QVariant(row['lng']), QVariant(row['lat'])])
