@@ -21,9 +21,9 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QVariant, QTime, QDate, Qt
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QVariant, QDate
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QApplication, QDateTimeEdit, QMessageBox, QLabel
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QLabel, QFileDialog
 from qgis.core import QgsProject, QgsVectorLayer, QgsFields, QgsField, QgsGeometry, QgsJsonUtils, QgsPointXY, QgsFeature
 from PyQt5.QtCore import QTextCodec, QDateTime
 
@@ -349,14 +349,7 @@ class arpatest:
         Raises:
             Exception: If the start and end dates are not in the same year.
         """
-
-        # Check that the start and end dates are in the same year
-        if start_datetime.date().year != end_datetime.date().year:
-            raise Exception("Dates must be in the same year!")
-        elif start_datetime > end_datetime:
-            raise Exception("Start date bust be before end date")
-
-        # Get the year of the start and end dates
+        #Get the year of the start and end dates
         year = start_datetime.date().year
 
         return year, start_datetime.date(), end_datetime.date()
@@ -503,8 +496,8 @@ class arpatest:
         df = df.sort_values(by='data', ascending=True).reset_index(drop=True)
         return df
 
-
 # --- RUN ------------
+
 
     def run(self):
         """Run method that performs all the real work"""
@@ -515,6 +508,7 @@ class arpatest:
             self.first_start = False
             self.dlg = arpatestDialog()
 
+
         # Add sensors type
         self.dlg.cbSensorsType.clear()
         self.dlg.cbSensorsType.addItems(
@@ -523,6 +517,7 @@ class arpatest:
         # modifiy initial widgets
         self.run_startup_datesAPI()
 
+        #Options for the calendar
         today = QDate.currentDate()
         self.dlg.dtStartTime.setDisplayFormat("dd-MM-yyyy hh:mm:ss")
         self.dlg.dtEndTime.setDisplayFormat("dd-MM-yyyy hh:mm:ss")
@@ -530,6 +525,7 @@ class arpatest:
         self.dlg.dtEndTime.setDate(today)
         self.dlg.dtStartTime.setCalendarPopup(True)
         self.dlg.dtEndTime.setCalendarPopup(True)
+
 
         # show the dialog
         self.dlg.show()
@@ -541,25 +537,39 @@ class arpatest:
 
             print("---------- Start test ----------")
 
+            #Create client
             arpa_token = "riTLzYVRVdDaQtUkxDDaHRgJi"
             client = self.connect_ARPA_api(arpa_token)
 
             with client:
+                #Dataframe containing sensors info
                 sensors_df = self.ARPA_sensors_info(client)
 
+                #Get the selected sensor from the gui
                 sensor_sel = self.dlg.cbSensorsType.currentText()
+
+                #Filter the sensors depending on the "tipologia" field (sensor type)
                 sensors_list = (
                     sensors_df.loc[sensors_df['tipologia'] == sensor_sel]).idsensore.tolist()
 
                 print(("Selected sensor: {sel}").format(sel=sensor_sel))
                 print(("Number of selected sensor: {sens_len}").format(
                     sens_len=len(sensors_list)))
-
+                
+                #Get the start and the end date from the gui
                 start_date = self.dlg.dtStartTime.dateTime().toPyDateTime()
                 end_date = self.dlg.dtEndTime.dateTime().toPyDateTime()
-
+                #Check if the dates are valid
                 year, start_date, end_date = self.check_dates(
                     start_date, end_date)
+
+                # Check that the start and end dates are in the same year
+                if start_date.year != end_date.year:
+                    QMessageBox.warning(None, "Invalid Date Range", "Dates must be in the same year!")
+                    return
+                elif start_date > end_date:
+                    QMessageBox.warning(None, "Invalid Date Range", "Start date bust be before end date")
+                    return
 
                 print(year, start_date, end_date)
 
@@ -576,8 +586,7 @@ class arpatest:
                 merged_df['lat'] = merged_df['lat'].astype('float64')
                 merged_df['idsensore'] = merged_df['idsensore'].astype('int32')
                 merged_df['tipologia'] = merged_df['tipologia'].astype(str)
-
-                merged_df.info(verbose=True)
+                merged_df['datastart'] = merged_df['datastart'].astype(str)
 
                 # print(os.getcwd())
                 # merged_df.to_csv('./test.csv', index=False)
@@ -587,7 +596,8 @@ class arpatest:
 
                 # Add fields for latitude and longitude
                 layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("valore", QVariant.Double),
-                                                    QgsField("tipologia", QVariant.String),
+                                                    QgsField(
+                                                        "tipologia", QVariant.String),
                                                     QgsField("unit_dimisura", QVariant.String), QgsField(
                                                         "idstazione", QVariant.Int),
                                                     QgsField("nomestazione", QVariant.String), QgsField(
@@ -607,7 +617,7 @@ class arpatest:
                     point = QgsPointXY(row['lng'], row['lat'])
                     feature = QgsFeature()
                     feature.setGeometry(QgsGeometry.fromPointXY(point))
-                    feature.setAttributes([QVariant(row['idsensore']),QVariant(row['valore']), QVariant(row['tipologia']), QVariant(row['unit_dimisura']), QVariant(row['idstazione']), QVariant(row['nomestazione']),
+                    feature.setAttributes([QVariant(row['idsensore']), QVariant(row['valore']), QVariant(row['tipologia']), QVariant(row['unit_dimisura']), QVariant(row['idstazione']), QVariant(row['nomestazione']),
                                           QVariant(row['quota']), QVariant(row['provincia']), QVariant(
                                               row['datastart']), QVariant(row['storico']), QVariant(row['cgb_nord']),
                                            QVariant(row['cgb_est']), QVariant(row['lng']), QVariant(row['lat'])])

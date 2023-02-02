@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>909</width>
-    <height>512</height>
+    <width>553</width>
+    <height>430</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -48,9 +48,22 @@
        <item>
         <widget class="QLabel" name="label_5">
          <property name="text">
-          <string>Data available for the current month (API)</string>
+          <string>Data available for the current month (API): </string>
          </property>
         </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_12">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
        </item>
        <item>
         <widget class="QLabel" name="label_startAPIdate">
@@ -58,6 +71,19 @@
           <string>start API date</string>
          </property>
         </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_13">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
        </item>
        <item>
         <widget class="QLabel" name="label_endAPIdate">
@@ -118,7 +144,7 @@
        <item>
         <widget class="QLabel" name="label_3">
          <property name="text">
-          <string>Start date</string>
+          <string>Start date:</string>
          </property>
         </widget>
        </item>
@@ -145,7 +171,7 @@
        <item>
         <widget class="QLabel" name="label_4">
          <property name="text">
-          <string>End date</string>
+          <string>End date:</string>
          </property>
         </widget>
        </item>
@@ -172,7 +198,7 @@
        <item>
         <widget class="QLabel" name="label">
          <property name="text">
-          <string>Sensor type</string>
+          <string>Sensor type:</string>
          </property>
         </widget>
        </item>
@@ -199,7 +225,7 @@
        <item>
         <widget class="QLabel" name="label_10">
          <property name="text">
-          <string>Aggregation</string>
+          <string>Aggregation:</string>
          </property>
         </widget>
        </item>
@@ -222,58 +248,17 @@
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_9">
-       <item>
-        <widget class="QLabel" name="label_11">
-         <property name="text">
-          <string>Temporal aggregation</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer name="horizontalSpacer_9">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <widget class="QComboBox" name="cbSensorsType_3"/>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_10">
-       <item>
-        <widget class="QLabel" name="label_12">
-         <property name="text">
-          <string>Province</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer name="horizontalSpacer_10">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <widget class="QComboBox" name="cbSensorsType_4"/>
-       </item>
-      </layout>
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
      </item>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_11">
@@ -305,19 +290,6 @@
         </widget>
        </item>
       </layout>
-     </item>
-     <item>
-      <spacer name="verticalSpacer">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>20</width>
-         <height>40</height>
-        </size>
-       </property>
-      </spacer>
      </item>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -361,9 +333,9 @@
  <connections>
   <connection>
    <sender>button_box</sender>
-   <signal>rejected()</signal>
+   <signal>accepted()</signal>
    <receiver>arpatestDialogBase</receiver>
-   <slot>reject()</slot>
+   <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>20</x>
@@ -377,9 +349,9 @@
   </connection>
   <connection>
    <sender>button_box</sender>
-   <signal>accepted()</signal>
+   <signal>rejected()</signal>
    <receiver>arpatestDialogBase</receiver>
-   <slot>accept()</slot>
+   <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>20</x>
