@@ -23,18 +23,22 @@
 """
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QVariant, QTime, QDate, Qt
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QApplication
-from qgis.core import QgsProject, QgsVectorLayer, QgsFields, QgsField, QgsJsonUtils
-from PyQt5.QtCore import QTextCodec
+from qgis.PyQt.QtWidgets import QAction, QApplication, QDateTimeEdit, QMessageBox, QLabel
+from qgis.core import QgsProject, QgsVectorLayer, QgsFields, QgsField, QgsGeometry, QgsJsonUtils, QgsPointXY, QgsFeature
+from PyQt5.QtCore import QTextCodec, QDateTime
 
 # Import libraries
-import json
-import os
-import datetime
-import time
-import statistics
 from sodapy import Socrata
 import pandas as pd
+from datetime import datetime, timedelta
+import requests
+from io import BytesIO
+from zipfile import ZipFile
+import os
+import time
+import json
+import numpy as np
+import dask.dataframe as dd
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -44,20 +48,20 @@ import os.path
 
 # Properites / Lists
 
-properties_types = [("idsensore", QVariant.Int), ("tipologia", QVariant.String),
-                    ("unit_dimisura", QVariant.String), ("idstazione", QVariant.Int),
-                    ("nomestazione", QVariant.String), ("quota", QVariant.Double),
-                    ("provincia", QVariant.String), ("datastart", QVariant.String),
-                    ("storico", QVariant.String),
-                    ("cgb_nord", QVariant.Int), ("cgb_est", QVariant.Int),
-                    ("lng", QVariant.Double), ("lat", QVariant.Double)]
+fields_types = [("idsensore", QVariant.Int), ("tipologia", QVariant.String),
+                ("unit_dimisura", QVariant.String), ("idstazione", QVariant.Int),
+                ("nomestazione", QVariant.String), ("quota", QVariant.Double),
+                ("provincia", QVariant.String), ("datastart", QVariant.String),
+                ("storico", QVariant.String),
+                ("cgb_nord", QVariant.Int), ("cgb_est", QVariant.Int),
+                ("lng", QVariant.Double), ("lat", QVariant.Double)]
 
-list_properties = dict(properties_types).keys()
+list_fields = dict(fields_types).keys()
 
 sensors_types = ["Altezza Neve", "Direzione Vento", "Livello Idrometrico", "Precipitazione", "Radiazione Globale", "Temperatura",
                  "Umidità Relativa", "Velocità Vento"]
 
-# Functions
+# ------------- FUNCTIONS --------------------------
 
 
 def df_to_geojson(df, properties, lat='lat', lon='lng'):
@@ -102,7 +106,7 @@ def df_to_geojson(df, properties, lat='lat', lon='lng'):
     return geojson
 
 
-def add_vector_points_from_geojson(geojson_file, layer_name, properties_types):
+def add_vector_points_from_geojson(geojson_file, layer_name, fields_types):
     """Function to add vector points to a QGIS layer from a .geojson file
 
     Args:
@@ -119,7 +123,7 @@ def add_vector_points_from_geojson(geojson_file, layer_name, properties_types):
 
     # Add the fields
     qgs_f = QgsFields()
-    for property in properties_types:
+    for property in fields_types:
         qgs_f.append(QgsField(property[0], property[1]))
     dp.addAttributes(qgs_f)
     vl.updateFields()
@@ -278,73 +282,227 @@ class arpatest:
     def test_function(self):
         print("Works!")
 
-    def connect_to_ARPA_api(self):
-        """ Unauthenticated client only works with public data sets, and there is a limit for the requests.
+    def connect_ARPA_api(self, token: str):
+        """
+        Function to connect to ARPA API. Unauthenticated client only works with public data sets, and there is a limit for the requests.
         Note 'None' in place of application token, and no username or password.
         To get all the available data from the API the authentication is required.
-         """
 
-        # If logging without API key to public dataset
-        #client = Socrata("www.dati.lombardia.it", None)
+        Parameters:
+            token (str): the ARPA token obtained from Open Data Lombardia website
 
-        # Authenticated client (needed for non-public datasets):
-        client = Socrata("www.dati.lombardia.it", "riTLzYVRVdDaQtUkxDDaHRgJi")
+        Returns:
+            client: client session
+        """
+        # Connect to Open Data Lombardia using the token
+        if token == "":
+            print("No token provided. Requests made without an app_token will be subject to strict throttling limits.")
+            client = Socrata("www.dati.lombardia.it", None)
+        else:
+            print("Using provided token.")
+            client = Socrata("www.dati.lombardia.it", app_token=token)
 
         return client
 
-    def request_ARPA_stations_info(self, client):
-        """ Request data from ARPA API"""
+    def ARPA_sensors_info(self, client) -> pd.DataFrame:
+        """
+        Functions to convert sensors information to Pandas dataframe and fix the data types.
 
-        # dataset id of meteorological stations on Open Data Regione Lombardia
-        meteo_stations_info = "nf78-nj6b"
-        query = """select * """
-        sensors = client.get(meteo_stations_info, query=query)
-        sensors_df = pd.DataFrame(data=sensors)
+        Parameters:
+            sensors_info: object obtained from Socrata with get request
+
+        Returns:
+            df: dataframe containing ARPA sensors information
+        """
+
+        # Select meteo stations dataset containing positions and information about sensors
+        stationsId = "nf78-nj6b"
+        sensors_info = client.get_all(stationsId)
+
+        sensors_df = pd.DataFrame(sensors_info)
+        sensors_df["idsensore"] = sensors_df["idsensore"].astype("int32")
+        sensors_df["tipologia"] = sensors_df["tipologia"].astype("category")
+        sensors_df["idstazione"] = sensors_df["idstazione"].astype("int32")
+        sensors_df["quota"] = sensors_df["quota"].astype("int16")
+        sensors_df["provincia"] = sensors_df["provincia"].astype("category")
+        sensors_df["storico"] = sensors_df["storico"].astype("category")
+        sensors_df["datastart"] = pd.to_datetime(sensors_df["datastart"])
+        sensors_df["datastop"] = pd.to_datetime(sensors_df["datastop"])
+        sensors_df = sensors_df.drop(
+            columns=[":@computed_region_6hky_swhk", ":@computed_region_ttgh_9sm5"])
 
         return sensors_df
 
+    def check_dates(self, start_datetime, end_datetime):
+        """
+        Check that the start and end dates are in the same year.
 
-    # def on_dataset_changed(self, value_dataset):
+        Parameters:
+            start_date (datetime): The start date in the format "YYYY-MM-DD".
+            end_date (datetime): The end date in the format "YYYY-MM-DD".
 
-    #     self.dlg.sensor_type_list.clear()
+        Returns:
+            year (int): The year of the start and end dates.
+            start_datetime (datetime): The start date as a datetime object.
+            end_datetime (datetime): The end date as a datetime object.
 
-    #     # get the current time to define the available data at current time
-    #     now_date = QDateTime.currentDateTime().date()
-    #     now_day = now_date.day()
-    #     if now_day < 2:
-    #         max_date = now_date.addDays(-now_day)
-    #     else:
-    #         max_date = now_date.addDays(-1)
-    #     # We take the max_date and not the now_date in case the date is the first day of the month
-    #     now_month = max_date.month()
-    #     now_year = max_date.year()
+        Raises:
+            Exception: If the start and end dates are not in the same year.
+        """
 
-    #     if value_dataset == 1:
+        # Check that the start and end dates are in the same year
+        if start_datetime.date().year != end_datetime.date().year:
+            raise Exception("Dates must be in the same year!")
+        elif start_datetime > end_datetime:
+            raise Exception("Start date bust be before end date")
 
-    #         # For weather, only the data of the current month is available
-    #         min_datetime = QDateTime(QDate(now_year, now_month, 1), QTime(1, 0, 0, 0))
-    #         max_datetime = QDateTime(max_date, QTime(0, 0, 0, 0))
+        # Get the year of the start and end dates
+        year = start_datetime.date().year
 
-    #         # Sensor list for Weather
-    #         items = ["Altezza Neve", "Direzione Vento", "Livello Idrometrico", "Precipitazione", "Radiazione Globale", "Temperatura",
-    #                     "Umidità Relativa", "Velocità Vento"]
+        return year, start_datetime.date(), end_datetime.date()
 
-    #         self.dlg.dateTime_stop.setMinimumDateTime(min_datetime)
-    #         self.dlg.dateTime_stop.setMaximumDateTime(max_datetime)
-    #         self.dlg.dateTime_stop.setDateTime(max_datetime)
+    def req_ARPA_start_end_date_API(self, client):
+        """
+        Function to request the start and the end date of data available in the ARPA API.
 
-    #         self.dlg.dateTime_start.setMinimumDateTime(min_datetime)
-    #         self.dlg.dateTime_start.setMaximumDateTime(max_datetime)
-    #         self.dlg.dateTime_start.setDateTime(min_datetime)
+            Parameters:
+                client: the client session
 
-    #         self.dlg.sensor_type_list.addItems(items)
+            Returns: 
+                start_API_date (str): starting date for available data inside the API.
+                end_API_date (str): ending date for available data inside the API.
 
-    #     elif value_dataset <=0:
-    #         print("Initial value OK")
-    #         pass
-    #     else:
-    #         print("No valid value for dataset number")
-    #         pass
+        """
+        try:
+            with client:
+                # Weather sensors dataset id on Open Data Lombardia
+                weather_sensor_id = "647i-nhxk"
+
+                # Query min and max dates
+                query = """ select MAX(data), MIN(data) limit 9999999999999999"""
+
+                # Get max and min dates from the list
+                min_max_dates = client.get(weather_sensor_id, query=query)[0]
+
+                # Start and minimum dates from the dict obtained from the API
+                start_API_date = min_max_dates['MIN_data']
+                end_API_date = min_max_dates['MAX_data']
+
+                # Convert to datetime
+                start_API_date = datetime.strptime(
+                    start_API_date, "%Y-%m-%dT%H:%M:%S.%f")
+                end_API_date = datetime.strptime(
+                    end_API_date, "%Y-%m-%dT%H:%M:%S.%f")
+
+                return start_API_date, end_API_date
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+    def run_startup_datesAPI(self):
+        try:
+            arpa_token = "riTLzYVRVdDaQtUkxDDaHRgJi"
+            client = self.connect_ARPA_api(arpa_token)
+
+            start_date_API, end_date_API = self.req_ARPA_start_end_date_API(
+                client)
+            label_name_start = start_date_API.strftime("%Y-%m-%d %H:%M:%S")
+            label_name_end = end_date_API.strftime("%Y-%m-%d %H:%M:%S")
+            self.dlg.label_startAPIdate.setText(label_name_start)
+            self.dlg.label_endAPIdate.setText(label_name_end)
+        except requests.exceptions.RequestException as e:
+            QMessageBox.warning(self.dlg, "Error", str(e))
+
+    def req_ARPA_data_API(self, client, start_date, end_date, sensors_list):
+        """
+        Function to request data from available weather sensors in the ARPA API using a query.
+
+            Parameters:
+                client: the client session
+                start date (str): the start date in yyy-mm-dd format
+                end date (str): the end date in yyy-mm-dd format
+
+            Returns: 
+                time_series: time series of values requested with the query for all sensors
+
+        """
+
+        # Select the Open Data Lombardia Meteo sensors dataset
+        weather_sensor_id = "647i-nhxk"
+
+        # Convert to string in year-month-day format, accepted by ARPA query
+        start_date = start_date.strftime("%Y-%m-%dT%H:%M:%S.%f")
+        end_date = end_date.strftime("%Y-%m-%dT%H:%M:%S.%f")
+
+        print("--- Starting request to ARPA API ---")
+
+        t = time.time()
+
+        # Query data
+        query = """
+        select
+            *
+        where data >= \'{}\' and data <= \'{}\' limit 9999999999999999
+        """.format(start_date, end_date)
+
+        # Get time series and evaluate time spent to request them
+        time_series = client.get(weather_sensor_id, query=query)
+
+        print(time_series)
+        elapsed = time.time() - t
+        print("Time used for requesting the data from ARPA API: ", elapsed)
+
+        # Create dataframe
+        df = pd.DataFrame(time_series, columns=['idsensore', 'data', 'valore'])
+
+        # Convert types
+        df['valore'] = df['valore'].astype('float32')
+        df['idsensore'] = df['idsensore'].astype('int32')
+        df['data'] = pd.to_datetime(df['data'])
+        df = df.sort_values(by='data', ascending=True).reset_index(drop=True)
+
+        # Filter with selected sensors list
+        try:
+            df = df[df['value'] != -9999]
+        except:
+            df = df[df['valore'] != -9999]
+        df = df[df['idsensore'].isin(sensors_list)]
+
+        return df
+
+    def aggregate_group_data(self, df, agg="mean"):
+        """
+        Aggregates ARPA data using statistical aggregration function (mean, max, min etc.). The dataframe is grouped by sensor id (idsensore).
+
+                Parameters:
+                    df(dataframe): ARPA dataframe containing the following columns: "idsensore"(int), "data"(datetime) and "valore"(float)
+
+                    agg(str): the statistical aggregation to be performed (mean, max, min etc.)
+
+                Returns:
+                    df(dataframe): computed filtered and aggregated dask dataframe
+        """
+
+        print("Number of sensors available in the dataframe: ",
+              len(df.idsensore.unique()))
+        print("Aggregation function: " + agg)
+        df = df.set_index('data')
+
+        grouped = df.groupby('idsensore')['valore'].agg(agg)
+        grouped = grouped.reset_index()
+
+        return grouped
+
+    def order_dates(self, df):
+        """
+        Orders the dates of a dataframe
+
+        Parameters
+            df: dataframe containing datetime column
+
+        """
+        df = df.sort_values(by='data', ascending=True).reset_index(drop=True)
+        return df
+
 
 # --- RUN ------------
 
@@ -362,28 +520,103 @@ class arpatest:
         self.dlg.cbSensorsType.addItems(
             [str(sensor) for sensor in sensors_types])
 
+        # modifiy initial widgets
+        self.run_startup_datesAPI()
+
+        today = QDate.currentDate()
+        self.dlg.dtStartTime.setDisplayFormat("dd-MM-yyyy hh:mm:ss")
+        self.dlg.dtEndTime.setDisplayFormat("dd-MM-yyyy hh:mm:ss")
+        self.dlg.dtStartTime.setDate(today)
+        self.dlg.dtEndTime.setDate(today)
+        self.dlg.dtStartTime.setCalendarPopup(True)
+        self.dlg.dtEndTime.setCalendarPopup(True)
+
         # show the dialog
         self.dlg.show()
+
         # Run the dialog event loop
         result = self.dlg.exec_()
 
         if result:
 
             print("---------- Start test ----------")
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
-            client = self.connect_to_ARPA_api()
 
-            df = self.request_ARPA_stations_info(client)
+            arpa_token = "riTLzYVRVdDaQtUkxDDaHRgJi"
+            client = self.connect_ARPA_api(arpa_token)
 
-            currentSelectedSensor = self.dlg.cbSensorsType.currentText()
+            with client:
+                sensors_df = self.ARPA_sensors_info(client)
 
-            df = df.loc[df['tipologia'] == str(currentSelectedSensor)]
+                sensor_sel = self.dlg.cbSensorsType.currentText()
+                sensors_list = (
+                    sensors_df.loc[sensors_df['tipologia'] == sensor_sel]).idsensore.tolist()
 
-            # create the vector layer for stations
-            stations_geojson = df_to_geojson(df, list_properties)
-            # Add sensors
-            add_vector_points_from_geojson(
-                stations_geojson, "Sensori " + str(currentSelectedSensor), properties_types)
+                print(("Selected sensor: {sel}").format(sel=sensor_sel))
+                print(("Number of selected sensor: {sens_len}").format(
+                    sens_len=len(sensors_list)))
 
-            print(currentSelectedSensor)
+                start_date = self.dlg.dtStartTime.dateTime().toPyDateTime()
+                end_date = self.dlg.dtEndTime.dateTime().toPyDateTime()
+
+                year, start_date, end_date = self.check_dates(
+                    start_date, end_date)
+
+                print(year, start_date, end_date)
+
+                sensors_values = self.req_ARPA_data_API(
+                    client, start_date, end_date, sensors_list)
+
+                sensor_test_agg = self.aggregate_group_data(
+                    sensors_values, "mean")
+
+                merged_df = pd.merge(
+                    sensor_test_agg, sensors_df, on='idsensore')
+
+                merged_df['lng'] = merged_df['lng'].astype('float64')
+                merged_df['lat'] = merged_df['lat'].astype('float64')
+                merged_df['idsensore'] = merged_df['idsensore'].astype('int32')
+                merged_df['tipologia'] = merged_df['tipologia'].astype(str)
+
+                merged_df.info(verbose=True)
+
+                # print(os.getcwd())
+                # merged_df.to_csv('./test.csv', index=False)
+
+                layer = QgsVectorLayer(
+                    "Point?crs=EPSG:4326", sensor_sel, "memory")
+
+                # Add fields for latitude and longitude
+                layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("valore", QVariant.Double),
+                                                    QgsField("tipologia", QVariant.String),
+                                                    QgsField("unit_dimisura", QVariant.String), QgsField(
+                                                        "idstazione", QVariant.Int),
+                                                    QgsField("nomestazione", QVariant.String), QgsField(
+                                                        "quota", QVariant.Double),
+                                                    QgsField("provincia", QVariant.String), QgsField(
+                                                        "datastart", QVariant.String),
+                                                    QgsField(
+                                                        "storico", QVariant.String),
+                                                    QgsField("cgb_nord", QVariant.Int), QgsField("cgb_est",
+                                                                                                 QVariant.Int),
+                                                    QgsField("lng", QVariant.Double), QgsField("lat", QVariant.Double)])
+                layer.updateFields()
+                layer.startEditing()
+                # Add point geometries to the layer
+                features = []
+                for index, row in merged_df.iterrows():
+                    point = QgsPointXY(row['lng'], row['lat'])
+                    feature = QgsFeature()
+                    feature.setGeometry(QgsGeometry.fromPointXY(point))
+                    feature.setAttributes([QVariant(row['idsensore']),QVariant(row['valore']), QVariant(row['tipologia']), QVariant(row['unit_dimisura']), QVariant(row['idstazione']), QVariant(row['nomestazione']),
+                                          QVariant(row['quota']), QVariant(row['provincia']), QVariant(
+                                              row['datastart']), QVariant(row['storico']), QVariant(row['cgb_nord']),
+                                           QVariant(row['cgb_est']), QVariant(row['lng']), QVariant(row['lat'])])
+                    features.append(feature)
+
+                layer.addFeatures(features)
+                layer.commitChanges()
+                # Add the layer to the QGIS project
+                QgsProject.instance().addMapLayer(layer)
+                layer.updateExtents()
+
+            pass
