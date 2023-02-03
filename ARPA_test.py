@@ -23,9 +23,10 @@
 """
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QVariant, QDate
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QMessageBox, QLabel, QFileDialog
-from qgis.core import QgsProject, QgsVectorLayer, QgsFields, QgsField, QgsGeometry, QgsJsonUtils, QgsPointXY, QgsFeature
-from PyQt5.QtCore import QTextCodec, QDateTime
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QFileDialog
+from qgis.core import QgsProject, QgsVectorLayer, QgsFields, QgsField, QgsGeometry, QgsPointXY, QgsFeature, Qgis
+from qgis.utils import iface
+from PyQt5.QtCore import QTextCodec
 
 # Import libraries
 from sodapy import Socrata
@@ -46,93 +47,8 @@ from .resources import *
 from .ARPA_test_dialog import arpatestDialog
 import os.path
 
-# Properites / Lists
-
-fields_types = [("idsensore", QVariant.Int), ("tipologia", QVariant.String),
-                ("unit_dimisura", QVariant.String), ("idstazione", QVariant.Int),
-                ("nomestazione", QVariant.String), ("quota", QVariant.Double),
-                ("provincia", QVariant.String), ("datastart", QVariant.String),
-                ("storico", QVariant.String),
-                ("cgb_nord", QVariant.Int), ("cgb_est", QVariant.Int),
-                ("lng", QVariant.Double), ("lat", QVariant.Double)]
-
-list_fields = dict(fields_types).keys()
-
 sensors_types = ["Altezza Neve", "Direzione Vento", "Livello Idrometrico", "Precipitazione", "Radiazione Globale", "Temperatura",
                  "Umidità Relativa", "Velocità Vento"]
-
-# ------------- FUNCTIONS --------------------------
-
-
-def df_to_geojson(df, properties, lat='lat', lon='lng'):
-    """A function to convert a pandas Dataframe to a geojson file.
-
-    Args:
-        df (Pandas Dataframe): pandas Dataframe with longitude and latitude columns
-        properties (str list): columns properties
-        lat (str, optional): latitude column
-        lon (str, optional): longitude column
-
-    Returns:
-        _type_: return geojson file
-    """
-    df = df.dropna(subset=[lat, lon], axis=0, inplace=False)
-
-    df[lat] = df[lat].astype(float)
-    df[lon] = df[lon].astype(float)
-
-    df = df[properties]
-    # create a new python dict to contain our geojson data, using geojson format
-    geojson = {'type': 'FeatureCollection', 'features': []}
-
-    # loop through each row in the dataframe and convert each row to geojson format
-    for _, row in df.iterrows():
-        # create a feature template to fill in
-        feature = {'type': 'Feature',
-                   'properties': {},
-                   'geometry': {'type': 'Point',
-                                'coordinates': []}}
-
-        # fill in the coordinates
-        feature['geometry']['coordinates'] = [row[lon], row[lat]]
-
-        # for each column, get the value and add it as a new feature property
-        for prop in properties:
-            feature['properties'][prop] = row[prop]
-
-        # add this feature (aka, converted dataframe row) to the list of features inside our dict
-        geojson['features'].append(feature)
-
-    return geojson
-
-
-def add_vector_points_from_geojson(geojson_file, layer_name, fields_types):
-    """Function to add vector points to a QGIS layer from a .geojson file
-
-    Args:
-        geojson_file (geojson): input .geojson file 
-        layer_name (str): layer name to be shown in QGIS
-    """
-    fcString = json.dumps(geojson_file)
-    codec = QTextCodec.codecForName("UTF-8")
-    fields = QgsJsonUtils.stringToFields(fcString, codec)
-    feats = QgsJsonUtils.stringToFeatureList(fcString, fields, codec)
-
-    vl = QgsVectorLayer('Point?crs=EPSG:4326', layer_name, "memory")
-    dp = vl.dataProvider()
-
-    # Add the fields
-    qgs_f = QgsFields()
-    for property in fields_types:
-        qgs_f.append(QgsField(property[0], property[1]))
-    dp.addAttributes(qgs_f)
-    vl.updateFields()
-
-    dp.addFeatures(feats)
-    vl.updateExtents()
-
-    QgsProject.instance().addMapLayer(vl)
-
 
 class arpatest:
     """QGIS Plugin Implementation."""
@@ -279,9 +195,13 @@ class arpatest:
                 action)
             self.iface.removeToolBarIcon(action)
 
-
     def test_function(self):
         print("Works!")
+
+    def select_output_file(self):
+        filename, _filter = QFileDialog.getSaveFileName(
+        self.dlg, "Select   output file ","", '*.csv')
+        self.dlg.leOutputFileName.setText(filename)
 
     def connect_ARPA_api(self, token=""):
         """
@@ -325,6 +245,7 @@ class arpatest:
         sensors_df["tipologia"] = sensors_df["tipologia"].astype("category")
         sensors_df["idstazione"] = sensors_df["idstazione"].astype("int32")
         sensors_df["quota"] = sensors_df["quota"].astype("int16")
+        sensors_df["unit_dimisura"] = sensors_df["unit_dimisura"].astype("category")
         sensors_df["provincia"] = sensors_df["provincia"].astype("category")
         sensors_df["storico"] = sensors_df["storico"].astype("category")
         sensors_df["datastart"] = pd.to_datetime(sensors_df["datastart"])
@@ -471,7 +392,8 @@ class arpatest:
 
         # df = df.set_index('data') not necessary if not resampling
 
-        grouped = df.groupby('idsensore')['valore'].agg(['mean', 'max', 'min', 'std', 'count'])
+        grouped = df.groupby('idsensore')['valore'].agg(
+            ['mean', 'max', 'min', 'std', 'count'])
         grouped = grouped.reset_index()
 
         return grouped
@@ -497,19 +419,22 @@ class arpatest:
         if self.first_start == True:
             self.first_start = False
             self.dlg = arpatestDialog()
+            self.dlg.pbOutputSave.clicked.connect(self.select_output_file)
 
         # Add sensors type
         self.dlg.cbSensorsType.clear()
         self.dlg.cbSensorsType.addItems(
             [str(sensor) for sensor in sensors_types])
 
-        self.dlg.labelLinkDoc.setText('<a href="https://github.com/capizziemanuele/ARPA_Weather_plugin">GitHub Doc</a>')
+        # Add documentation link
+        self.dlg.labelLinkDoc.setText(
+            '<a href="https://github.com/capizziemanuele/ARPA_Weather_plugin">GitHub Doc</a>')
         self.dlg.labelLinkDoc.setOpenExternalLinks(True)
 
-        # modifiy initial widgets
+        # Modifiy initial widgets
         self.run_startup_datesAPI()
 
-        # Options for the calendar
+        # Options for the calendar (date selection)
         today = QDate.currentDate()
         self.dlg.dtStartTime.setDisplayFormat("dd-MM-yyyy hh:mm:ss")
         self.dlg.dtEndTime.setDisplayFormat("dd-MM-yyyy hh:mm:ss")
@@ -518,7 +443,7 @@ class arpatest:
         self.dlg.dtStartTime.setCalendarPopup(True)
         self.dlg.dtEndTime.setCalendarPopup(True)
 
-        # show the dialog
+        # Show the dialog
         self.dlg.show()
 
         # Run the dialog event loop
@@ -559,7 +484,6 @@ class arpatest:
                         None, "Invalid Date Range", "Start date bust be before end date")
                     return
 
-
                 sensors_values = self.req_ARPA_data_API(
                     client, start_date, end_date, sensors_list)
 
@@ -582,32 +506,31 @@ class arpatest:
                     "Point?crs=EPSG:4326", sensor_sel, "memory")
 
                 # Add fields for latitude and longitude
-                layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("mean", QVariant.Double), QgsField("max", QVariant.Double), QgsField("min", QVariant.Double), QgsField("std", QVariant.Double), QgsField("count", QVariant.Int),
-                                                    QgsField(
-                                                        "tipologia", QVariant.String),
-                                                    QgsField("unit_dimisura", QVariant.String), QgsField(
-                                                        "idstazione", QVariant.Int),
-                                                    QgsField("nomestazione", QVariant.String), QgsField(
-                                                        "quota", QVariant.Double),
-                                                    QgsField("provincia", QVariant.String), QgsField(
-                                                        "datastart", QVariant.String),
-                                                    QgsField(
-                                                        "storico", QVariant.String),
-                                                    QgsField("cgb_nord", QVariant.Int), QgsField("cgb_est",
-                                                                                                 QVariant.Int),
+                layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("mean", QVariant.Double), QgsField("max", QVariant.Double),
+                                                    QgsField("min", QVariant.Double), QgsField("std", QVariant.Double), QgsField("count", QVariant.Int),
+                                                    QgsField("tipologia", QVariant.String),
+                                                    QgsField("unit_dimisura", QVariant.String), QgsField("idstazione", QVariant.Int),
+                                                    QgsField("nomestazione", QVariant.String), QgsField("quota", QVariant.Double),
+                                                    QgsField("provincia", QVariant.String), QgsField("datastart", QVariant.String),
+                                                    QgsField("storico", QVariant.String),
+                                                    QgsField("cgb_nord", QVariant.Int), QgsField("cgb_est", QVariant.Int),
                                                     QgsField("lng", QVariant.Double), QgsField("lat", QVariant.Double)])
                 layer.updateFields()
                 layer.startEditing()
                 # Add point geometries to the layer
                 features = []
+
                 for index, row in merged_df.iterrows():
                     point = QgsPointXY(row['lng'], row['lat'])
                     feature = QgsFeature()
                     feature.setGeometry(QgsGeometry.fromPointXY(point))
-                    feature.setAttributes([QVariant(row['idsensore']), QVariant(row['mean']), QVariant(row['max']), QVariant(row['min']), QVariant(row['std']), QVariant(row['count']), QVariant(row['tipologia']), QVariant(row['unit_dimisura']), QVariant(row['idstazione']), QVariant(row['nomestazione']),
-                                          QVariant(row['quota']), QVariant(row['provincia']), QVariant(
-                                              row['datastart']), QVariant(row['storico']), QVariant(row['cgb_nord']),
-                                           QVariant(row['cgb_est']), QVariant(row['lng']), QVariant(row['lat'])])
+                    feature.setAttributes([QVariant(row['idsensore']), QVariant(row['mean']), QVariant(row['max']),
+                                           QVariant(row['min']), QVariant(row['std']), QVariant(row['count']),
+                                           QVariant(row['tipologia']), QVariant(row['unit_dimisura']),
+                                           QVariant(row['idstazione']), QVariant(row['nomestazione']),
+                                           QVariant(row['quota']), QVariant(row['provincia']), QVariant(row['datastart']), 
+                                           QVariant(row['storico']), QVariant(row['cgb_nord']),
+                                            QVariant(row['cgb_est']), QVariant(row['lng']), QVariant(row['lat'])])
                     features.append(feature)
 
                 layer.addFeatures(features)
@@ -615,5 +538,9 @@ class arpatest:
                 # Add the layer to the QGIS project
                 QgsProject.instance().addMapLayer(layer)
                 layer.updateExtents()
+
+                filename = self.dlg.leOutputFileName.text()
+                merged_df.to_csv(filename, index=False)
+                self.iface.messageBar().pushMessage("Success", "Output file written at " + filename, level=Qgis.Success, duration=3)
 
             pass
