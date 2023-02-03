@@ -24,7 +24,7 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QVariant, QDate
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QMessageBox, QFileDialog
-from qgis.core import QgsProject, QgsVectorLayer, QgsFields, QgsField, QgsGeometry, QgsPointXY, QgsFeature, Qgis
+from qgis.core import QgsProject, QgsVectorLayer, QgsFields, QgsField, QgsGeometry, QgsPointXY, QgsFeature, Qgis, QgsVectorFileWriter
 from qgis.utils import iface
 from PyQt5.QtCore import QTextCodec
 
@@ -199,8 +199,9 @@ class arpatest:
         print("Works!")
 
     def select_output_file(self):
-        filename, _filter = QFileDialog.getSaveFileName(
-        self.dlg, "Select   output file ","", '*.csv')
+        options = QFileDialog.Options()
+        options |= QFileDialog.ReadOnly
+        filename, _filter = QFileDialog.getSaveFileName(self.dlg, "Save Layer As", "", "Shapefiles (*.shp);;Geopackages (*.gpkg);;CSV Files (*.csv)", options=options)
         self.dlg.leOutputFileName.setText(filename)
 
     def connect_ARPA_api(self, token=""):
@@ -255,26 +256,26 @@ class arpatest:
 
         return sensors_df
 
-    def check_dates(self, start_datetime, end_datetime):
-        """
-        Check that the start and end dates are in the same year.
+    # def check_dates(self, start_datetime, end_datetime):
+    #     """
+    #     Check that the start and end dates are in the same year.
 
-        Parameters:
-            start_date (datetime): The start date in the format "YYYY-MM-DD".
-            end_date (datetime): The end date in the format "YYYY-MM-DD".
+    #     Parameters:
+    #         start_date (datetime): The start date in the format "YYYY-MM-DD".
+    #         end_date (datetime): The end date in the format "YYYY-MM-DD".
 
-        Returns:
-            year (int): The year of the start and end dates.
-            start_datetime (datetime): The start date as a datetime object.
-            end_datetime (datetime): The end date as a datetime object.
+    #     Returns:
+    #         year (int): The year of the start and end dates.
+    #         start_datetime (datetime): The start date as a datetime object.
+    #         end_datetime (datetime): The end date as a datetime object.
 
-        Raises:
-            Exception: If the start and end dates are not in the same year.
-        """
-        # Get the year of the start and end dates
-        year = start_datetime.date().year
+    #     Raises:
+    #         Exception: If the start and end dates are not in the same year.
+    #     """
+    #     # Get the year of the start and end dates
+    #     year = start_datetime.date().year
 
-        return year, start_datetime.date(), end_datetime.date()
+    #     return year, start_datetime.date(), end_datetime.date()
 
     def req_ARPA_start_end_date_API(self, client):
         """
@@ -470,9 +471,6 @@ class arpatest:
                 # Get the start and the end date from the gui
                 start_date = self.dlg.dtStartTime.dateTime().toPyDateTime()
                 end_date = self.dlg.dtEndTime.dateTime().toPyDateTime()
-                # Check if the dates are valid
-                year, start_date, end_date = self.check_dates(
-                    start_date, end_date)
 
                 # Check that the start and end dates are in the same year
                 if start_date.year != end_date.year:
@@ -484,12 +482,15 @@ class arpatest:
                         None, "Invalid Date Range", "Start date bust be before end date")
                     return
 
+                # Get sensors value time series
                 sensors_values = self.req_ARPA_data_API(
                     client, start_date, end_date, sensors_list)
 
+                # Calculate statistics on the whole dataset
                 sensor_test_agg = self.aggregate_group_data(
                     sensors_values)
 
+                # Merge the values with the sensors info
                 merged_df = pd.merge(
                     sensor_test_agg, sensors_df, on='idsensore')
 
@@ -502,8 +503,9 @@ class arpatest:
                 # print(os.getcwd())
                 # merged_df.to_csv('./test.csv', index=False)
 
+                # Create vector layer
                 layer = QgsVectorLayer(
-                    "Point?crs=EPSG:4326", sensor_sel, "memory")
+                    "Point?crs=EPSG:4326", sensor_sel+' ({start} / {end})'.format(start=start_date, end=end_date), "memory")
 
                 # Add fields for latitude and longitude
                 layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("mean", QVariant.Double), QgsField("max", QVariant.Double),
@@ -539,8 +541,26 @@ class arpatest:
                 QgsProject.instance().addMapLayer(layer)
                 layer.updateExtents()
 
+                # Save file as shp/gpkg/csv
                 filename = self.dlg.leOutputFileName.text()
-                merged_df.to_csv(filename, index=False)
-                self.iface.messageBar().pushMessage("Success", "Output file written at " + filename, level=Qgis.Success, duration=3)
+                context = QgsProject.instance().transformContext()
+
+                if filename != "":
+                    if filename.endswith(".shp"):
+                        # Save as a shapefile
+                        options = QgsVectorFileWriter.SaveVectorOptions()
+                        options.driverName = 'ESRI Shapefile'
+                        QgsVectorFileWriter.writeAsVectorFormatV3(layer, filename, context, options)
+                    elif filename.endswith(".gpkg"):
+                        # Save as a geopackage
+                        options = QgsVectorFileWriter.SaveVectorOptions()
+                        options.driverName = 'GPKG'
+                        QgsVectorFileWriter.writeAsVectorFormatV3(layer, filename, context, options)
+                    elif filename.endswith(".csv"):
+                        # Save as csv
+                        merged_df.to_csv(filename, index=False)
+                    
+                    # Write message
+                    self.iface.messageBar().pushMessage("Success", "Output file written at " + filename, level=Qgis.Success, duration=3)
 
             pass
