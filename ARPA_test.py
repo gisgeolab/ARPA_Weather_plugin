@@ -440,8 +440,8 @@ class arpatest:
 
         # Add sensors type
         self.dlg.cbSensorsType.clear()
-        self.dlg.cbSensorsType.addItems(
-            [str(sensor) for sensor in sensors_types])
+        self.dlg.cbSensorsType.addItems([str(sensor) for sensor in sensors_types])
+        self.dlg.leOutputFileName.clear()
 
         # Add documentation link
         self.dlg.labelLinkDoc.setText(
