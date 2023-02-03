@@ -385,8 +385,6 @@ class arpatest:
                 Parameters:
                     df(dataframe): ARPA dataframe containing the following columns: "idsensore"(int), "data"(datetime) and "valore"(float)
 
-                    agg(str): the statistical aggregation to be performed (mean, max, min etc.)
-
                 Returns:
                     df(dataframe): computed filtered and aggregated dask dataframe
         """
@@ -395,6 +393,24 @@ class arpatest:
 
         grouped = df.groupby('idsensore')['valore'].agg(
             ['mean', 'max', 'min', 'std', 'count'])
+        grouped = grouped.reset_index()
+
+        return grouped
+
+    def aggregate_group_data_wind_dir(self, df):
+        """
+        Aggregates ARPA wind direction data using mode and count functions. The dataframe is grouped by sensor id (idsensore).
+
+                Parameters:
+                    df(dataframe): ARPA dataframe containing the following columns: "idsensore"(int), "data"(datetime) and "valore"(float)
+
+                Returns:
+                    df(dataframe): computed filtered and aggregated dask dataframe
+        """
+
+        # df = df.set_index('data') not necessary if not resampling
+
+        grouped = df.groupby('idsensore')['valore'].agg([lambda x: pd.Series.mode(x)[0], 'count']).rename({'<lambda_0>': 'mode'}, axis=1)
         grouped = grouped.reset_index()
 
         return grouped
@@ -464,6 +480,7 @@ class arpatest:
                 # Get the selected sensor from the gui
                 sensor_sel = self.dlg.cbSensorsType.currentText()
 
+
                 # Filter the sensors depending on the "tipologia" field (sensor type)
                 sensors_list = (
                     sensors_df.loc[sensors_df['tipologia'] == sensor_sel]).idsensore.tolist()
@@ -483,16 +500,17 @@ class arpatest:
                     return
 
                 # Get sensors value time series
-                sensors_values = self.req_ARPA_data_API(
-                    client, start_date, end_date, sensors_list)
+                sensors_values = self.req_ARPA_data_API(client, start_date, end_date, sensors_list)
 
                 # Calculate statistics on the whole dataset
-                sensor_test_agg = self.aggregate_group_data(
-                    sensors_values)
+                if sensor_sel != "Direzione Vento":
+                    sensor_test_agg = self.aggregate_group_data(sensors_values)
+                
+                if sensor_sel == "Direzione Vento":
+                    sensor_test_agg = self.aggregate_group_data_wind_dir(sensors_values)
 
                 # Merge the values with the sensors info
-                merged_df = pd.merge(
-                    sensor_test_agg, sensors_df, on='idsensore')
+                merged_df = pd.merge(sensor_test_agg, sensors_df, on='idsensore')
 
                 merged_df['lng'] = merged_df['lng'].astype('float64')
                 merged_df['lat'] = merged_df['lat'].astype('float64')
@@ -504,36 +522,59 @@ class arpatest:
                 # merged_df.to_csv('./test.csv', index=False)
 
                 # Create vector layer
-                layer = QgsVectorLayer(
-                    "Point?crs=EPSG:4326", sensor_sel+' ({start} / {end})'.format(start=start_date, end=end_date), "memory")
+                layer = QgsVectorLayer("Point?crs=EPSG:4326", sensor_sel+' ({start} / {end})'.format(start=start_date, end=end_date), "memory")
 
-                # Add fields for latitude and longitude
-                layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("mean", QVariant.Double), QgsField("max", QVariant.Double),
-                                                    QgsField("min", QVariant.Double), QgsField("std", QVariant.Double), QgsField("count", QVariant.Int),
-                                                    QgsField("tipologia", QVariant.String),
-                                                    QgsField("unit_dimisura", QVariant.String), QgsField("idstazione", QVariant.Int),
-                                                    QgsField("nomestazione", QVariant.String), QgsField("quota", QVariant.Double),
-                                                    QgsField("provincia", QVariant.String), QgsField("datastart", QVariant.String),
-                                                    QgsField("storico", QVariant.String),
-                                                    QgsField("cgb_nord", QVariant.Int), QgsField("cgb_est", QVariant.Int),
-                                                    QgsField("lng", QVariant.Double), QgsField("lat", QVariant.Double)])
+                if sensor_sel != "Direzione Vento":
+                    layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("mean", QVariant.Double), QgsField("max", QVariant.Double),
+                                                        QgsField("min", QVariant.Double), QgsField("std", QVariant.Double), QgsField("count", QVariant.Int),
+                                                        QgsField("tipologia", QVariant.String),
+                                                        QgsField("unit_dimisura", QVariant.String), QgsField("idstazione", QVariant.Int),
+                                                        QgsField("nomestazione", QVariant.String), QgsField("quota", QVariant.Double),
+                                                        QgsField("provincia", QVariant.String), QgsField("datastart", QVariant.String),
+                                                        QgsField("storico", QVariant.String),
+                                                        QgsField("cgb_nord", QVariant.Int), QgsField("cgb_est", QVariant.Int),
+                                                        QgsField("lng", QVariant.Double), QgsField("lat", QVariant.Double)])
+                
+                if sensor_sel == "Direzione Vento":
+                    layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("mode", QVariant.Double), QgsField("count", QVariant.Int),
+                                                        QgsField("tipologia", QVariant.String),
+                                                        QgsField("unit_dimisura", QVariant.String), QgsField("idstazione", QVariant.Int),
+                                                        QgsField("nomestazione", QVariant.String), QgsField("quota", QVariant.Double),
+                                                        QgsField("provincia", QVariant.String), QgsField("datastart", QVariant.String),
+                                                        QgsField("storico", QVariant.String),
+                                                        QgsField("cgb_nord", QVariant.Int), QgsField("cgb_est", QVariant.Int),
+                                                        QgsField("lng", QVariant.Double), QgsField("lat", QVariant.Double)])
+
                 layer.updateFields()
                 layer.startEditing()
-                # Add point geometries to the layer
-                features = []
 
-                for index, row in merged_df.iterrows():
-                    point = QgsPointXY(row['lng'], row['lat'])
-                    feature = QgsFeature()
-                    feature.setGeometry(QgsGeometry.fromPointXY(point))
-                    feature.setAttributes([QVariant(row['idsensore']), QVariant(row['mean']), QVariant(row['max']),
-                                           QVariant(row['min']), QVariant(row['std']), QVariant(row['count']),
-                                           QVariant(row['tipologia']), QVariant(row['unit_dimisura']),
-                                           QVariant(row['idstazione']), QVariant(row['nomestazione']),
-                                           QVariant(row['quota']), QVariant(row['provincia']), QVariant(row['datastart']), 
-                                           QVariant(row['storico']), QVariant(row['cgb_nord']),
+                features = []
+                if sensor_sel != "Direzione Vento":
+                    for index, row in merged_df.iterrows():
+                        point = QgsPointXY(row['lng'], row['lat'])
+                        feature = QgsFeature()
+                        feature.setGeometry(QgsGeometry.fromPointXY(point))
+                        feature.setAttributes([QVariant(row['idsensore']), QVariant(row['mean']), QVariant(row['max']),
+                                            QVariant(row['min']), QVariant(row['std']), QVariant(row['count']),
+                                            QVariant(row['tipologia']), QVariant(row['unit_dimisura']),
+                                            QVariant(row['idstazione']), QVariant(row['nomestazione']),
+                                            QVariant(row['quota']), QVariant(row['provincia']), QVariant(row['datastart']), 
+                                            QVariant(row['storico']), QVariant(row['cgb_nord']),
                                             QVariant(row['cgb_est']), QVariant(row['lng']), QVariant(row['lat'])])
-                    features.append(feature)
+                        features.append(feature)
+                
+                if sensor_sel == "Direzione Vento":
+                    for index, row in merged_df.iterrows():
+                        point = QgsPointXY(row['lng'], row['lat'])
+                        feature = QgsFeature()
+                        feature.setGeometry(QgsGeometry.fromPointXY(point))
+                        feature.setAttributes([QVariant(row['idsensore']), QVariant(row['mode']), QVariant(row['count']),
+                                            QVariant(row['tipologia']), QVariant(row['unit_dimisura']),
+                                            QVariant(row['idstazione']), QVariant(row['nomestazione']),
+                                            QVariant(row['quota']), QVariant(row['provincia']), QVariant(row['datastart']), 
+                                            QVariant(row['storico']), QVariant(row['cgb_nord']),
+                                            QVariant(row['cgb_est']), QVariant(row['lng']), QVariant(row['lat'])])
+                        features.append(feature)
 
                 layer.addFeatures(features)
                 layer.commitChanges()
