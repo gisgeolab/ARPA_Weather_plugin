@@ -24,7 +24,7 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QVariant, QDate
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QMessageBox, QFileDialog
-from qgis.core import QgsProject, QgsVectorLayer, QgsFields, QgsField, QgsGeometry, QgsPointXY, QgsFeature, Qgis, QgsVectorFileWriter
+from qgis.core import QgsProject, QgsVectorLayer, QgsFields, QgsField, QgsGeometry, QgsPointXY, QgsFeature, Qgis, QgsVectorFileWriter, QgsApplication
 from qgis.utils import iface
 from PyQt5.QtCore import QTextCodec
 
@@ -46,6 +46,9 @@ from .resources import *
 # Import the code for the dialog
 from .ARPA_test_dialog import arpatestDialog
 import os.path
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
 
 sensors_types = ["Altezza Neve", "Direzione Vento", "Livello Idrometrico", "Precipitazione", "Radiazione Globale", "Temperatura",
                  "Umidità Relativa", "Velocità Vento"]
@@ -241,6 +244,7 @@ class arpatest:
         stationsId = "nf78-nj6b"
         sensors_info = client.get_all(stationsId)
 
+        # Set data types
         sensors_df = pd.DataFrame(sensors_info)
         sensors_df["idsensore"] = sensors_df["idsensore"].astype("int32")
         sensors_df["tipologia"] = sensors_df["tipologia"].astype("category")
@@ -251,8 +255,7 @@ class arpatest:
         sensors_df["storico"] = sensors_df["storico"].astype("category")
         sensors_df["datastart"] = pd.to_datetime(sensors_df["datastart"])
         sensors_df["datastop"] = pd.to_datetime(sensors_df["datastop"])
-        sensors_df = sensors_df.drop(
-            columns=[":@computed_region_6hky_swhk", ":@computed_region_ttgh_9sm5"])
+        sensors_df = sensors_df.drop(columns=[":@computed_region_6hky_swhk", ":@computed_region_ttgh_9sm5"])
 
         return sensors_df
 
@@ -315,12 +318,15 @@ class arpatest:
             print(f"An error occurred: {e}")
 
     def run_startup_datesAPI(self):
+        """
+        Request max and min dates available from API. These dates are used to update the date labels in the GUI.
+
+        """
         try:
 
             client = self.connect_ARPA_api()
 
-            start_date_API, end_date_API = self.req_ARPA_start_end_date_API(
-                client)
+            start_date_API, end_date_API = self.req_ARPA_start_end_date_API(client)
             label_name_start = start_date_API.strftime("%Y-%m-%d %H:%M:%S")
             label_name_end = end_date_API.strftime("%Y-%m-%d %H:%M:%S")
             self.dlg.label_startAPIdate.setText(label_name_start)
@@ -378,6 +384,128 @@ class arpatest:
 
         return df
 
+    def download_extract_csv_from_year(self, year):
+        """
+        Function for selecting the correct link for downloading zipped .csv meteorological data from ARPA sensors and extracting it.
+
+        For older data it is necessary to download this .csv files containing the time series of the meteorological sensors.
+
+            Parameters:
+                year(str): the selected year for downloading the .csv file containing the meteorological sensors time series
+
+            Returns:
+                None
+        """
+        
+        #Create a dict with years and link to the zip folder on Open Data Lombardia - REQUIRES TO BE UPDATED EVERY YEAR
+        switcher = {
+            '2023': "https://www.dati.lombardia.it/download/48xr-g9b9/application%2Fzip",
+            '2022': "https://www.dati.lombardia.it/download/mvvc-nmzv/application%2Fzip",
+            '2021': "https://www.dati.lombardia.it/download/49n9-866s/application%2Fzip",
+            '2020': "https://www.dati.lombardia.it/download/erjn-istm/application%2Fzip",
+            '2019': "https://www.dati.lombardia.it/download/wrhf-6ztd/application%2Fzip",
+            '2018': "https://www.dati.lombardia.it/download/sfbe-yqe8/application%2Fzip",
+            '2017': "https://www.dati.lombardia.it/download/vx6g-atiu/application%2Fzip",
+            '2016': "https://www.dati.lombardia.it/download/kgxu-frcw/application%2Fzip"
+        }
+        
+        #Select the url and make request
+        url = switcher[year]
+        filename = 'meteo_'+str(year)+'.zip'
+        
+        #If yrar.csv file is already downloaded, skip download
+        if not os.path.exists(year+".csv"):
+            print("--- Starting download ---")
+            t = time.time()
+            print(('Downloading {filename} -> Started. It might take a while... Please wait!').format(filename = filename))
+            response = requests.get(url, stream=True)
+            
+            block_size = 1024
+            wrote = 0 
+            
+            # Writing the file to the local file system
+            with open(filename, "wb") as f:
+                for data in response.iter_content(block_size):
+                    wrote = wrote + len(data)
+                    f.write(data)
+                    #percentage = wrote / (block_size*block_size)
+                    #print("\rDownloaded: {:0.2f} MB".format(percentage), end="")
+                
+            elapsed = time.time() - t
+            
+            print(('\nDownloading {filename} -> Completed. Time required for download: {time:0.2f} s.').format(filename = filename, time=elapsed))
+
+            print(("Starting unzipping: {filename}").format(filename=filename))
+            #Loading the .zip and creating a zip object
+            with ZipFile(filename, 'r') as zObject:
+                # Extracting all the members of the zip into a specific location
+                zObject.extractall()
+
+            csv_file=str(year)+'.csv'
+            print(("File unzipped: {filename}").format(filename=filename))
+            print(("File csv saved: {filename}").format(filename=csv_file))
+
+            #Remove the zip folder
+            if os.path.exists(filename):
+                print(("{filename} removed").format(filename=filename))
+                os.remove(filename)
+            else:
+                print(("The file {filename} does not exist in this folder").format(filename=filename))
+        
+        else:
+            print(year+".csv already exists. It won't be downloaded.")
+
+    def process_ARPA_csv(self, csv_file, start_date, end_date, sensors_list):
+        """
+        This function reads the ARPA csv file into a dask dataframe and provided a computed dataframe. It renames the columns like the API columns names, filters between provided dates and select the sensors present in the list.
+
+            Parameters:
+                csv_file(str): name of the csv file
+                start_date(datetime): start date for processing
+                end_date(datetime): end date for processing
+                sensors_list(string list): list of selected sensors
+
+            Returns:
+                df(dataframe): computed filtered dask dataframe
+        """
+        
+        print("--- Starting processing csv data ---")
+        print(("The time range used for the processing is {start_date} to {end_date}").format(start_date=start_date,end_date=end_date))
+        
+        #Read csv file with Dask dataframe
+        df = dd.read_csv(csv_file, usecols=['IdSensore','Data','Valore', 'Stato']) 
+        
+        #Make csv columns names equal to API columns names
+        df = df.rename(columns={'IdSensore': 'idsensore', 'Data': 'data', 'Valore': 'valore', 'Stato':'stato'})
+        
+        #Type formatting
+        df['valore'] = df['valore'].astype('float32')
+        df['idsensore'] = df['idsensore'].astype('int32')
+        df['data'] = dd.to_datetime(df.data, format='%d/%m/%Y %H:%M:%S')
+        df['stato'] = df['stato'].astype(str)
+        
+        #Filter using the dates
+        df = df[df['valore'] != -9999]
+        df = df.loc[(df['data'] >= start_date) & (df['data'] <= end_date)]
+        #Filter on temperature sensors list
+        sensors_list = list(map(int, sensors_list))
+        df = df[df['idsensore'].isin(sensors_list)] #keep only sensors in the list (for example providing a list of temperature sensors, will keep only those)
+        df = df[df.stato.isin(["VA", "VV"])] #keep only validated data identified by stato equal to VA and VV
+        df = df.drop(['stato'], axis=1)
+        
+        #Order dates
+        df = df.sort_values(by='data', ascending=True).reset_index(drop=True)
+        
+        print("Starting computing dataframe")
+        
+        #Compute df
+        t = time.time()
+        df = df.compute()
+        elapsed = time.time() - t
+        print("Time used for computing dataframe {time:0.2f} s.".format(time=elapsed))
+        
+        return df 
+
     def aggregate_group_data(self, df):
         """
         Aggregates ARPA data using statistical aggregration function (mean, max, min etc.). The dataframe is grouped by sensor id (idsensore).
@@ -426,6 +554,17 @@ class arpatest:
         df = df.sort_values(by='data', ascending=True).reset_index(drop=True)
         return df
 
+    def cleanup_csv_files():
+        folder_path = os.getcwd()
+        for filename in os.listdir(folder_path):
+            if filename.endswith(".csv"):
+                file_path = os.path.join(folder_path, filename)
+                try:
+                    if os.path.isfile(file_path):
+                        os.unlink(file_path)
+                except Exception as e:
+                    print("Error while deleting file:", e)
+
 # --- RUN ------------
 
     def run(self):
@@ -444,8 +583,7 @@ class arpatest:
         self.dlg.leOutputFileName.clear()
 
         # Add documentation link
-        self.dlg.labelLinkDoc.setText(
-            '<a href="https://github.com/capizziemanuele/ARPA_Weather_plugin">GitHub Doc</a>')
+        self.dlg.labelLinkDoc.setText('<a href="https://github.com/capizziemanuele/ARPA_Weather_plugin">GitHub Doc</a>')
         self.dlg.labelLinkDoc.setOpenExternalLinks(True)
 
         # Modifiy initial widgets
@@ -460,6 +598,10 @@ class arpatest:
         self.dlg.dtStartTime.setCalendarPopup(True)
         self.dlg.dtEndTime.setCalendarPopup(True)
 
+        # It gets the datetime of the first day of current month. It is used to decide if require data from csv or API.
+        api_start_limit = datetime(datetime.today().year, datetime.today().month, 1)
+
+
         # Show the dialog
         self.dlg.show()
 
@@ -468,39 +610,47 @@ class arpatest:
 
         if result:
 
+            # Get the start and the end date from the gui
+            start_date = self.dlg.dtStartTime.dateTime().toPyDateTime()
+            end_date = self.dlg.dtEndTime.dateTime().toPyDateTime()
+
             # Create client
             arpa_token = self.dlg.leToken.text()
 
             client = self.connect_ARPA_api(arpa_token)
 
             with client:
-                # Dataframe containing sensors info
+                # Dataframe containing sensors information
                 sensors_df = self.ARPA_sensors_info(client)
 
-                # Get the selected sensor from the gui
+                # Get the selected sensorfrom the gui
                 sensor_sel = self.dlg.cbSensorsType.currentText()
 
-
                 # Filter the sensors depending on the "tipologia" field (sensor type)
-                sensors_list = (
-                    sensors_df.loc[sensors_df['tipologia'] == sensor_sel]).idsensore.tolist()
+                sensors_list = (sensors_df.loc[sensors_df['tipologia'] == sensor_sel]).idsensore.tolist()
 
-                # Get the start and the end date from the gui
-                start_date = self.dlg.dtStartTime.dateTime().toPyDateTime()
-                end_date = self.dlg.dtEndTime.dateTime().toPyDateTime()
-
+                year = start_date.year 
                 # Check that the start and end dates are in the same year
                 if start_date.year != end_date.year:
-                    QMessageBox.warning(
-                        None, "Invalid Date Range", "Dates must be in the same year!")
+                    QMessageBox.warning(None, "Invalid Date Range", "Dates must be in the same year!")
                     return
                 elif start_date > end_date:
-                    QMessageBox.warning(
-                        None, "Invalid Date Range", "Start date bust be before end date")
+                    QMessageBox.warning(None, "Invalid Date Range", "Start date bust be before end date")
                     return
 
-                # Get sensors value time series
-                sensors_values = self.req_ARPA_data_API(client, start_date, end_date, sensors_list)
+                # Request time series
+                if start_date < api_start_limit:
+                    print("Requesting CSV. This will take a while.")
+                    sensors_values = self.download_extract_csv_from_year(str(year)) #download the csv corresponding to the selected year
+                    csv_file = str(year)+'.csv'
+
+                    sensors_values = self.process_ARPA_csv(csv_file, start_date, end_date, sensors_list) #process csv file with dask
+
+                #If the chosen start date is equal or after the start date of API -> request data from API
+                elif start_date >= api_start_limit:
+                    print("Requesting from API")
+                    sensors_values = self.req_ARPA_data_API(client, start_date, end_date, sensors_list) #request data from ARPA API
+
 
                 # Calculate statistics on the whole dataset
                 if sensor_sel != "Direzione Vento":
@@ -545,11 +695,13 @@ class arpatest:
                                                         QgsField("cgb_nord", QVariant.Int), QgsField("cgb_est", QVariant.Int),
                                                         QgsField("lng", QVariant.Double), QgsField("lat", QVariant.Double)])
 
+                # Update fields and start editing
                 layer.updateFields()
                 layer.startEditing()
 
+                # Features creation
                 features = []
-                if sensor_sel != "Direzione Vento":
+                if sensor_sel != "Direzione Vento":         # If wind direction sensor is NOT selected
                     for index, row in merged_df.iterrows():
                         point = QgsPointXY(row['lng'], row['lat'])
                         feature = QgsFeature()
@@ -563,7 +715,7 @@ class arpatest:
                                             QVariant(row['cgb_est']), QVariant(row['lng']), QVariant(row['lat'])])
                         features.append(feature)
                 
-                if sensor_sel == "Direzione Vento":
+                if sensor_sel == "Direzione Vento":         # If wind direction sensor is selected
                     for index, row in merged_df.iterrows():
                         point = QgsPointXY(row['lng'], row['lat'])
                         feature = QgsFeature()
@@ -576,8 +728,10 @@ class arpatest:
                                             QVariant(row['cgb_est']), QVariant(row['lng']), QVariant(row['lat'])])
                         features.append(feature)
 
+                # Add features and commit changes
                 layer.addFeatures(features)
                 layer.commitChanges()
+
                 # Add the layer to the QGIS project
                 QgsProject.instance().addMapLayer(layer)
                 layer.updateExtents()
@@ -605,3 +759,6 @@ class arpatest:
                     self.iface.messageBar().pushMessage("Success", "Output file written at " + filename, level=Qgis.Success, duration=3)
 
             pass
+
+    QgsApplication.instance().aboutToQuit.connect(cleanup_csv_files)
+
