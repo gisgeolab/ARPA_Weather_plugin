@@ -60,6 +60,17 @@ if not os.path.exists(tmp_dir):
 sensors_types = ["Altezza Neve", "Direzione Vento", "Livello Idrometrico", "Precipitazione", "Radiazione Globale", "Temperatura",
                  "Umidità Relativa", "Velocità Vento"]
 
+switcher = {
+            '2023': "https://www.dati.lombardia.it/download/48xr-g9b9/application%2Fzip",
+            '2022': "https://www.dati.lombardia.it/download/mvvc-nmzv/application%2Fzip",
+            '2021': "https://www.dati.lombardia.it/download/49n9-866s/application%2Fzip",
+            '2020': "https://www.dati.lombardia.it/download/erjn-istm/application%2Fzip",
+            '2019': "https://www.dati.lombardia.it/download/wrhf-6ztd/application%2Fzip",
+            '2018': "https://www.dati.lombardia.it/download/sfbe-yqe8/application%2Fzip",
+            '2017': "https://www.dati.lombardia.it/download/vx6g-atiu/application%2Fzip",
+            '2016': "https://www.dati.lombardia.it/download/kgxu-frcw/application%2Fzip"
+        }
+
 class ARPAweather:
     """QGIS Plugin Implementation."""
 
@@ -308,39 +319,6 @@ class ARPAweather:
             print(f"Error fetching ARPA API data: {e}")
             raise Exception("Error fetching ARPA API data")
 
-    def run_startup_datesAPI(self):
-        """
-        Request the maximum and minimum dates available from the ARPA API and use them to update date labels in the GUI.
-
-        Parameters:
-            None
-
-        Returns:
-            None
-
-        Raises:
-            requests.exceptions.RequestException: If there is an issue with the request
-
-    """
-        try:
-            # Connect to the ARPA API
-            client = self.connect_ARPA_api()
-
-            # Request the start and end dates from the API
-            start_date_API, end_date_API = self.req_ARPA_start_end_date_API(client)
-
-            # Convert start and end dates to string format
-            label_name_start = start_date_API.strftime("%Y-%m-%d %H:%M:%S")
-            label_name_end = end_date_API.strftime("%Y-%m-%d %H:%M:%S")
-
-            # Update date labels in the GUI
-            self.dlg.label_startAPIdate.setText(label_name_start)
-            self.dlg.label_endAPIdate.setText(label_name_end)
-
-        except requests.exceptions.RequestException as e:
-            # Raise an error message if there is an issue with the request
-            QMessageBox.warning(self.dlg, "Error", str(e))
-
     def req_ARPA_data_API(self, client, start_date, end_date, sensors_list):
         """
         Function to request data from available weather sensors in the ARPA API using a query.
@@ -390,7 +368,7 @@ class ARPAweather:
 
         return df
 
-    def download_extract_csv_from_year(self, year):
+    def download_extract_csv_from_year(self, year, switcher):
         """
         Downloads a zipped CSV file of meteorological data from ARPA sensors for a given year from the Open Data Lombardia website.
         If the file has already been downloaded, it will be skipped.
@@ -404,16 +382,7 @@ class ARPAweather:
         """
         
         # Create a dictionary with years and corresponding download links on Open Data Lombardia - REQUIRES TO BE UPDATED EVERY YEAR
-        switcher = {
-            '2023': "https://www.dati.lombardia.it/download/48xr-g9b9/application%2Fzip",
-            '2022': "https://www.dati.lombardia.it/download/mvvc-nmzv/application%2Fzip",
-            '2021': "https://www.dati.lombardia.it/download/49n9-866s/application%2Fzip",
-            '2020': "https://www.dati.lombardia.it/download/erjn-istm/application%2Fzip",
-            '2019': "https://www.dati.lombardia.it/download/wrhf-6ztd/application%2Fzip",
-            '2018': "https://www.dati.lombardia.it/download/sfbe-yqe8/application%2Fzip",
-            '2017': "https://www.dati.lombardia.it/download/vx6g-atiu/application%2Fzip",
-            '2016': "https://www.dati.lombardia.it/download/kgxu-frcw/application%2Fzip"
-        }
+        switcher = switcher
         
         # Select the URL based on the year and make request
         url = switcher[year]
@@ -566,6 +535,14 @@ class ARPAweather:
                 except Exception as e:
                     print("Error while deleting file:", e)
 
+    def toggle_group_box(self):
+        if self.dlg.rb1.isChecked():
+            self.dlg.gb1.setEnabled(True)
+            self.dlg.gb2.setEnabled(False)
+        else:
+            self.dlg.gb1.setEnabled(False)
+            self.dlg.gb2.setEnabled(True)
+
 # --- RUN ------------
 
     def run(self):
@@ -577,6 +554,13 @@ class ARPAweather:
             self.first_start = False
             self.dlg = ARPAweatherDialog()
             self.dlg.pbOutputSave.clicked.connect(self.select_output_file)
+            # Group box toggled
+            self.dlg.gb1.setEnabled(True) # Set group box 1 (API) enabled
+            self.dlg.gb2.setEnabled(False) # Set group box 2 (CSV) disabled
+            self.dlg.rb1.setChecked(True) # Radio button 1 (API) checked at the beginning
+            self.dlg.rb1.toggled.connect(self.toggle_group_box)
+            self.dlg.rb2.toggled.connect(self.toggle_group_box)
+    
 
         # Add sensors type
         self.dlg.cbSensorsType.clear()
@@ -587,20 +571,52 @@ class ARPAweather:
         self.dlg.labelLinkDoc.setText('<a href="https://github.com/capizziemanuele/ARPA_Weather_plugin">GitHub Doc</a>')
         self.dlg.labelLinkDoc.setOpenExternalLinks(True)
 
+
         # Modifiy initial widgets
-        self.run_startup_datesAPI()
+        try:
+            # Connect to the ARPA API
+            client = self.connect_ARPA_api()
+
+            # Request the start and end dates from the API
+            start_date_API, end_date_API = self.req_ARPA_start_end_date_API(client)
+
+            # Convert start and end dates to string format
+            label_name_start = start_date_API.strftime("%Y-%m-%d %H:%M:%S")
+            label_name_end = end_date_API.strftime("%Y-%m-%d %H:%M:%S")
+
+            # Update date labels in the GUI
+            self.dlg.label_startAPIdate.setText(label_name_start)
+            self.dlg.label_endAPIdate.setText(label_name_end)
+
+        except requests.exceptions.RequestException as e:
+            # Raise an error message if there is an issue with the request
+            QMessageBox.warning(self.dlg, "Error", str(e))
+
+        # List of available years in CSV files
+        self.dlg.cb_list_years.addItems(list(switcher.keys()))
+        
+        # Get the selected year from the combo box
+        selected_year = self.dlg.cb_list_years.currentText()
+        # Get the current date and time from the datetime widget
+        self.dlg.cb_list_years.currentIndexChanged.connect(self.updateDateTime)
 
         # Options for the calendar (date selection)
-        today = QDate.currentDate()
-        self.dlg.dtStartTime.setDisplayFormat("dd-MM-yyyy hh:mm:ss")
-        self.dlg.dtEndTime.setDisplayFormat("dd-MM-yyyy hh:mm:ss")
-        self.dlg.dtStartTime.setDate(today)
-        self.dlg.dtEndTime.setDate(today)
-        self.dlg.dtStartTime.setCalendarPopup(True)
-        self.dlg.dtEndTime.setCalendarPopup(True)
+        self.dlg.dtStartTime_api.setDisplayFormat("dd-MM-yyyy hh:mm:ss")
+        self.dlg.dtEndTime_api.setDisplayFormat("dd-MM-yyyy hh:mm:ss")
+        self.dlg.dtStartTime_api.setDate(start_date_API)
+        self.dlg.dtEndTime_api.setDate(end_date_API)
+        self.dlg.dtStartTime_api.setCalendarPopup(True)
+        self.dlg.dtEndTime_api.setCalendarPopup(True)
+
+        self.dlg.dtStartTime_csv.setDisplayFormat("dd-MM-yyyy hh:mm:ss")
+        self.dlg.dtEndTime_csv.setDisplayFormat("dd-MM-yyyy hh:mm:ss")
+        #self.dlg.dtStartTime_csv.setDate(today)
+        #self.dlg.dtEndTime_csv.setDate(today)
+        self.dlg.dtStartTime_csv.setCalendarPopup(True)
+        self.dlg.dtEndTime_csv.setCalendarPopup(True)
 
         # It gets the datetime of the first day of current month. It is used to decide if require data from csv or API.
-        api_start_limit = datetime(datetime.today().year, datetime.today().month, 1)
+        # api_start_limit = datetime(datetime.today().year, datetime.today().month, 1)  #not used
 
 
         # Show the dialog
@@ -612,11 +628,20 @@ class ARPAweather:
         if result:
 
             # Get the start and the end date from the gui
-            start_date = self.dlg.dtStartTime.dateTime().toPyDateTime()
-            end_date = self.dlg.dtEndTime.dateTime().toPyDateTime()
+            if self.dlg.rb1.isChecked():
+                start_date = self.dlg.dtStartTime_api.dateTime().toPyDateTime()
+                end_date = self.dlg.dtEndTime_api.dateTime().toPyDateTime()
+                if start_date.year != end_date.year:
+                    QMessageBox.warning(None, "Invalid Date Range", "Dates must be in the same year!")
+            else:
+                start_date = self.dlg.dtStartTime_csv.dateTime().toPyDateTime()
+                end_date = self.dlg.dtEndTime_csv.dateTime().toPyDateTime()
 
             # Create client
-            arpa_token = self.dlg.leToken.text()
+            if self.dlg.rb1.isChecked():
+                arpa_token = self.dlg.leToken.text()
+            else:
+                arpa_token = ""
 
             client = self.connect_ARPA_api(arpa_token)
 
@@ -636,19 +661,19 @@ class ARPAweather:
                     QMessageBox.warning(None, "Invalid Date Range", "Dates must be in the same year!")
                     return
                 elif start_date > end_date:
-                    QMessageBox.warning(None, "Invalid Date Range", "Start date bust be before end date")
+                    QMessageBox.warning(None, "Invalid Date Range", "Start date must be before end date")
                     return
 
                 # Request time series
-                if start_date < api_start_limit:
+                if start_date < start_date_API:
                     print("Requesting CSV. This will take a while.")
-                    sensors_values = self.download_extract_csv_from_year(str(year)) #download the csv corresponding to the selected year
+                    sensors_values = self.download_extract_csv_from_year(str(year), switcher) #download the csv corresponding to the selected year
                     csv_file = str(year)+'.csv'
 
                     sensors_values = self.process_ARPA_csv(csv_file, start_date, end_date, sensors_list) #process csv file with dask
 
                 #If the chosen start date is equal or after the start date of API -> request data from API
-                elif start_date >= api_start_limit:
+                elif start_date >= start_date_API:
                     print("Requesting from API")
                     sensors_values = self.req_ARPA_data_API(client, start_date, end_date, sensors_list) #request data from ARPA API
 
@@ -673,7 +698,12 @@ class ARPAweather:
                 # merged_df.to_csv('./test.csv', index=False)
 
                 # Create vector layer
-                layer = QgsVectorLayer("Point?crs=EPSG:4326", sensor_sel+' ({start} / {end})'.format(start=start_date, end=end_date), "memory")
+                
+                layer_date_start = max(start_date_API, start_date)
+                layer_date_end = min(end_date_API, end_date)
+
+
+                layer = QgsVectorLayer("Point?crs=EPSG:4326", sensor_sel+' ({start} / {end})'.format(start=layer_date_start, end=layer_date_end), "memory")
 
                 if sensor_sel != "Direzione Vento":
                     layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("mean", QVariant.Double), QgsField("max", QVariant.Double),
