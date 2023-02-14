@@ -1,12 +1,12 @@
 #/***************************************************************************
-# arpatest
+# ARPAweather
 #
-# Plugin for testing ARPA API
+# Simplifies the process of collecting and analyzing meteorological ground sensor data. The data are provided by the Environmental Protection Agency of Lombardia Region (ARPA Lombardia) in Northern Italy and include  comprehensive open datasets of weather observations collected over multiple years.
 #							 -------------------
-#		begin				: 2022-12-29
+#		begin				: 2023-02-14
 #		git sha				: $Format:%H$
-#		copyright			: (C) 2022 by Emanuele Capizzi
-#		email				: capizzi.emanuele@gmail.com
+#		copyright			: (C) 2023 by Emanuele Capizzi - Politecnico di Milano
+#		email				: emanuele.capizzi@polimi.it
 # ***************************************************************************/
 #
 #/***************************************************************************
@@ -38,15 +38,15 @@ LOCALES =
 # translation
 SOURCES = \
 	__init__.py \
-	ARPA_test.py ARPA_test_dialog.py
+	arpaweather.py arpaweather_dialog.py
 
-PLUGINNAME = ARPA_test
+PLUGINNAME = arpaweather
 
 PY_FILES = \
 	__init__.py \
-	ARPA_test.py ARPA_test_dialog.py
+	arpaweather.py arpaweather_dialog.py
 
-UI_FILES = ARPA_test_dialog_base.ui
+UI_FILES = arpaweather_dialog_base.ui
 
 EXTRAS = metadata.txt icon.png
 
@@ -65,7 +65,7 @@ PEP8EXCLUDE=pydev,resources.py,conf.py,third_party,ui
 #	* Windows:
 #	  AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins'
 
-QGISDIR=C:\Users\emanuele\AppData/Roaming/QGIS/QGIS3/profiles/default/python/plugins
+QGISDIR=C:\Users\Emanuele\AppData/Roaming/QGIS/QGIS3/profiles/default/python/plugins
 
 #################################################
 # Normally you would not need to edit below here

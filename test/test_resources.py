@@ -8,9 +8,9 @@
 
 """
 
-__author__ = 'capizzi.emanuele@gmail.com'
-__date__ = '2022-12-29'
-__copyright__ = 'Copyright 2022, Emanuele Capizzi'
+__author__ = 'emanuele.capizzi@polimi.it'
+__date__ = '2023-02-14'
+__copyright__ = 'Copyright 2023, Emanuele Capizzi - Politecnico di Milano'
 
 import unittest
 
@@ -18,7 +18,7 @@ from qgis.PyQt.QtGui import QIcon
 
 
 
-class arpatestDialogTest(unittest.TestCase):
+class ARPAweatherDialogTest(unittest.TestCase):
     """Test rerources work."""
 
     def setUp(self):
@@ -31,12 +31,12 @@ class arpatestDialogTest(unittest.TestCase):
 
     def test_icon_png(self):
         """Test we can click OK."""
-        path = ':/plugins/arpatest/icon.png'
+        path = ':/plugins/ARPAweather/icon.png'
         icon = QIcon(path)
         self.assertFalse(icon.isNull())
 
 if __name__ == "__main__":
-    suite = unittest.makeSuite(arpatestResourcesTest)
+    suite = unittest.makeSuite(ARPAweatherResourcesTest)
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)
 

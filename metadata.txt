@@ -3,17 +3,17 @@
 # This file should be included when you package your plugin.# Mandatory items:
 
 [general]
-name=ARPA test
+name=ARPA Weather
 qgisMinimumVersion=3.0
-description=Plugin for testing ARPA API
+description=Simplifies the process of collecting and analyzing meteorological ground sensor data. The data are provided by the Environmental Protection Agency of Lombardia Region (ARPA Lombardia) in Northern Italy and include  comprehensive open datasets of weather observations collected over multiple years.
 version=0.1
-author=Emanuele Capizzi
-email=capizzi.emanuele@gmail.com
+author=Emanuele Capizzi - Politecnico di Milano
+email=emanuele.capizzi@polimi.it
 
-about=This plugin is a test for accessing ARPA data from its API.
+about=QGIS plugin to simplify the process of collecting and analyzing meteorological ground sensor data. The data are provided by the Environmental Protection Agency of Lombardia Region (ARPA Lombardia) in Northern Italy and include comprehensive open datasets of weather observations collected over multiple years. The network covers a vast area and consists of many sensors, such as temperature, precipitation amount, and many others.
 
-tracker=http://bugs
-repository=http://repo
+tracker=https://github.com/capizziemanuele/ARPA_Weather_plugin/issues
+repository=https://github.com/capizziemanuele/ARPA_Weather_plugin
 # End of mandatory metadata
 
 # Recommended items:
@@ -23,13 +23,13 @@ hasProcessingProvider=no
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=python
+tags=python, ARPA, weather, meteorology, meteo, sensors, API
 
-homepage=http://homepage
+homepage=https://github.com/capizziemanuele/ARPA_Weather_plugin
 category=Plugins
 icon=icon.png
 # experimental flag
-experimental=False
+experimental=True
 
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False

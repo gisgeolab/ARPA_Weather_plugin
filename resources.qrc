@@ -1,5 +1,5 @@
 <RCC>
-    <qresource prefix="/plugins/ARPA_test" >
+    <qresource prefix="/plugins/arpaweather" >
         <file>icon.png</file>
     </qresource>
 </RCC>

@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>arpatestDialogBase</class>
- <widget class="QDialog" name="arpatestDialogBase">
+ <class>ARPAweatherDialogBase</class>
+ <widget class="QDialog" name="ARPAweatherDialogBase">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>591</width>
-    <height>481</height>
+    <width>552</width>
+    <height>450</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>ARPA test</string>
+   <string>ARPA Weather</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
@@ -134,7 +134,7 @@
       </widget>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_5">
+      <layout class="QHBoxLayout" name="horizontalLayout_4">
        <item>
         <widget class="QLabel" name="label_3">
          <property name="text">
@@ -161,7 +161,7 @@
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_6">
+      <layout class="QHBoxLayout" name="horizontalLayout_5">
        <item>
         <widget class="QLabel" name="label_4">
          <property name="text">
@@ -188,7 +188,7 @@
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_8">
+      <layout class="QHBoxLayout" name="horizontalLayout_6">
        <item>
         <widget class="QLabel" name="label">
          <property name="text">
@@ -269,7 +269,7 @@
       </spacer>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_11">
+      <layout class="QHBoxLayout" name="horizontalLayout_9">
        <item>
         <widget class="QLabel" name="label_13">
          <property name="text">
@@ -300,7 +300,7 @@
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_4">
+      <layout class="QHBoxLayout" name="horizontalLayout_8">
        <item>
         <spacer name="horizontalSpacer_4">
          <property name="orientation">
@@ -342,7 +342,7 @@
   <connection>
    <sender>button_box</sender>
    <signal>accepted()</signal>
-   <receiver>arpatestDialogBase</receiver>
+   <receiver>ARPAweatherDialogBase</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -358,7 +358,7 @@
   <connection>
    <sender>button_box</sender>
    <signal>rejected()</signal>
-   <receiver>arpatestDialogBase</receiver>
+   <receiver>ARPAweatherDialogBase</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
