@@ -21,9 +21,9 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QVariant, QDate
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QVariant, QDate, QDateTime
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QMessageBox, QFileDialog
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QFileDialog, QDateTimeEdit, QStatusBar
 from qgis.core import QgsProject, QgsVectorLayer, QgsFields, QgsField, QgsGeometry, QgsPointXY, QgsFeature, Qgis, QgsVectorFileWriter, QgsApplication
 from qgis.utils import iface
 from PyQt5.QtCore import QTextCodec
@@ -307,10 +307,8 @@ class ARPAweather:
                 end_API_date = min_max_dates['MAX_data']
 
                 # Convert the date strings to datetime objects
-                start_API_date = datetime.strptime(
-                    start_API_date, "%Y-%m-%dT%H:%M:%S.%f")
-                end_API_date = datetime.strptime(
-                    end_API_date, "%Y-%m-%dT%H:%M:%S.%f")
+                start_API_date = datetime.strptime(start_API_date, "%Y-%m-%dT%H:%M:%S.%f")
+                end_API_date = datetime.strptime(end_API_date, "%Y-%m-%dT%H:%M:%S.%f")
 
                 return start_API_date, end_API_date
 
@@ -332,7 +330,7 @@ class ARPAweather:
         Returns:
             pandas.DataFrame: dataframe with idsensore, data and valore of the weather sensors within the specific time period
         """
-
+        iface.messageBar().pushMessage("Download", "Requesting data from ARPA API", level=Qgis.Info)
         # Select the Open Data Lombardia Meteo sensors dataset
         weather_sensor_id = "647i-nhxk"
 
@@ -388,9 +386,11 @@ class ARPAweather:
         url = switcher[year]
         filename = 'meteo_'+str(year)+'.zip'
         
+
         # If year.csv file is already downloaded, skip download
         if not os.path.exists(os.path.join(tmp_dir, f"{year}.csv")):
             print("--- Starting download ---")
+            iface.messageBar().pushMessage("Download", "Downloading CSV file. It might take a while... Please wait!", level=Qgis.Info)
             t = time.time()
             print((f'Downloading {filename} -> Started. It might take a while... Please wait!'))
             response = requests.get(url, stream=True)
@@ -429,6 +429,7 @@ class ARPAweather:
                 print((f"The file {filename} does not exist in this folder"))
         
         else:
+            iface.messageBar().pushMessage("Download", f"{year}.csv already exists. It won't be downloaded.", level=Qgis.Info)
             print(f"{year}.csv already exists. It won't be downloaded.")
 
     def process_ARPA_csv(self, csv_file, start_date, end_date, sensors_list):
@@ -444,7 +445,8 @@ class ARPAweather:
         Returns:
             df (Dask dataframe): Computed filtered Dask dataframe
         """
-        
+        iface.messageBar().pushMessage("Processing", "Processing CSV file.", level=Qgis.Info)
+
         print("--- Starting processing csv data ---")
         print(("The time range used for the processing is {start_date} to {end_date}").format(start_date=start_date,end_date=end_date))
         
@@ -536,12 +538,58 @@ class ARPAweather:
                     print("Error while deleting file:", e)
 
     def toggle_group_box(self):
+        """
+        Toggles the visibility of the group boxes based on which radio button is selected.
+
+        If the first radio button is checked, the first group box is enabled and the second group box is disabled.
+        If the second radio button is checked, the first group box is disabled and the second group box is enabled.
+        """
         if self.dlg.rb1.isChecked():
+            # If the first radio button is checked, enable the first group box and disable the second group box
             self.dlg.gb1.setEnabled(True)
             self.dlg.gb2.setEnabled(False)
         else:
+            # If the second radio button is checked, disable the first group box and enable the second group box
             self.dlg.gb1.setEnabled(False)
             self.dlg.gb2.setEnabled(True)
+
+    def update_calendar(self, index):
+        """
+        Updates the minimum and maximum dates of the date-time edit widgets in the dialog based on the year selected
+        in the combo box.
+
+        :param index: the index of the selected item in the combo box
+        """
+        # Get the selected year from the combo box and the current date and last day of previous month
+        sel_year = int(float(self.dlg.cb_list_years.currentText()))
+        today = datetime.today()
+        first_day_of_month = datetime(today.year, today.month, 1)
+        last_day_of_prev_month = first_day_of_month - timedelta(days=1)
+
+        # If the selected year is the current year, set the minimum date to the beginning of the year and the maximum date to the end of the previous month
+        if sel_year == int(today.year):
+            csv_cal_start_date = datetime(sel_year, 1, 1, 0, 0, 0)
+            csv_cal_end_date = datetime(sel_year, today.month-1, last_day_of_prev_month.day, 23, 59, 0)
+        else: 
+            csv_cal_start_date = datetime(sel_year, 1, 1, 0, 0, 0)
+            csv_cal_end_date = datetime(sel_year, 12, 31, 23, 59, 0)
+
+        # Set the display format, calendar popup, minimum date, maximum date, start date, and end date of the date-time edit widgets
+        self.dlg.dtStartTime_csv.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
+        self.dlg.dtEndTime_csv.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
+
+        self.dlg.dtStartTime_csv.setCalendarPopup(True)
+        self.dlg.dtEndTime_csv.setCalendarPopup(True)
+
+        self.dlg.dtStartTime_csv.setMinimumDateTime(csv_cal_start_date)
+        self.dlg.dtStartTime_csv.setMaximumDateTime(csv_cal_end_date)
+        self.dlg.dtEndTime_csv.setMinimumDateTime(csv_cal_start_date)
+        self.dlg.dtEndTime_csv.setMaximumDateTime(csv_cal_end_date)
+
+        self.dlg.dtStartTime_csv.setDateTime(csv_cal_start_date)
+        self.dlg.dtEndTime_csv.setDateTime(csv_cal_end_date)
+
+        
 
 # --- RUN ------------
 
@@ -566,6 +614,7 @@ class ARPAweather:
         self.dlg.cbSensorsType.clear()
         self.dlg.cbSensorsType.addItems([str(sensor) for sensor in sensors_types])
         self.dlg.leOutputFileName.clear()
+        self.dlg.cb_list_years.clear()
 
         # Add documentation link
         self.dlg.labelLinkDoc.setText('<a href="https://github.com/capizziemanuele/ARPA_Weather_plugin">GitHub Doc</a>')
@@ -592,32 +641,56 @@ class ARPAweather:
             # Raise an error message if there is an issue with the request
             QMessageBox.warning(self.dlg, "Error", str(e))
 
-        # List of available years in CSV files
-        self.dlg.cb_list_years.addItems(list(switcher.keys()))
-        
-        # Get the selected year from the combo box
-        selected_year = self.dlg.cb_list_years.currentText()
-        # Get the current date and time from the datetime widget
-        self.dlg.cb_list_years.currentIndexChanged.connect(self.updateDateTime)
 
         # Options for the calendar (date selection)
-        self.dlg.dtStartTime_api.setDisplayFormat("dd-MM-yyyy hh:mm:ss")
-        self.dlg.dtEndTime_api.setDisplayFormat("dd-MM-yyyy hh:mm:ss")
-        self.dlg.dtStartTime_api.setDate(start_date_API)
-        self.dlg.dtEndTime_api.setDate(end_date_API)
+        # API calendar - Delimit also dates
+        self.dlg.dtStartTime_api.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
+        self.dlg.dtEndTime_api.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
         self.dlg.dtStartTime_api.setCalendarPopup(True)
         self.dlg.dtEndTime_api.setCalendarPopup(True)
 
-        self.dlg.dtStartTime_csv.setDisplayFormat("dd-MM-yyyy hh:mm:ss")
-        self.dlg.dtEndTime_csv.setDisplayFormat("dd-MM-yyyy hh:mm:ss")
-        #self.dlg.dtStartTime_csv.setDate(today)
-        #self.dlg.dtEndTime_csv.setDate(today)
+        self.dlg.dtStartTime_api.setMinimumDateTime(start_date_API)
+        self.dlg.dtStartTime_api.setMaximumDateTime(end_date_API)
+        self.dlg.dtEndTime_api.setMinimumDateTime(start_date_API)
+        self.dlg.dtEndTime_api.setMaximumDateTime(end_date_API)
+
+        self.dlg.dtStartTime_api.setDateTime(start_date_API)
+        self.dlg.dtEndTime_api.setDateTime(end_date_API)
+
+
+        # CSV calendar
+        # List of available years in CSV files
+        years_list = list(switcher.keys())
+        self.dlg.cb_list_years.addItems(years_list)
+        sel_year = int(self.dlg.cb_list_years.currentText())
+        self.dlg.cb_list_years.currentIndexChanged.connect(self.update_calendar)
+
+        today = datetime.today()
+        first_day_of_month = datetime(today.year, today.month, 1)
+        last_day_of_prev_month = first_day_of_month - timedelta(days=1)
+        # Delimit selectable dates 
+        # For current year CSV let select only dates up to the previous month
+        if sel_year == int(today.year):
+            csv_cal_start_date = datetime(sel_year, 1, 1, 0, 0, 0)
+            csv_cal_end_date = datetime(sel_year, today.month-1, last_day_of_prev_month.day, 23, 59, 0) # minus 1 to get the previous month with respect to current one
+        else: 
+            csv_cal_start_date = datetime(sel_year, 1, 1, 0, 0, 0)
+            csv_cal_end_date = datetime(sel_year, 12, 31, 23, 59, 0)
+
+        self.dlg.dtStartTime_csv.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
+        self.dlg.dtEndTime_csv.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
         self.dlg.dtStartTime_csv.setCalendarPopup(True)
         self.dlg.dtEndTime_csv.setCalendarPopup(True)
 
-        # It gets the datetime of the first day of current month. It is used to decide if require data from csv or API.
-        # api_start_limit = datetime(datetime.today().year, datetime.today().month, 1)  #not used
+        self.dlg.dtStartTime_csv.setMinimumDateTime(csv_cal_start_date)
+        self.dlg.dtStartTime_csv.setMaximumDateTime(csv_cal_end_date)
+        self.dlg.dtEndTime_csv.setMinimumDateTime(csv_cal_start_date)
+        self.dlg.dtEndTime_csv.setMaximumDateTime(csv_cal_end_date)
 
+        self.dlg.dtStartTime_csv.setDateTime(csv_cal_start_date)
+        self.dlg.dtEndTime_csv.setDateTime(csv_cal_end_date)
+        
+        # api_start_limit = datetime(datetime.today().year, datetime.today().month, 1)  #not used
 
         # Show the dialog
         self.dlg.show()
@@ -673,7 +746,7 @@ class ARPAweather:
                     sensors_values = self.process_ARPA_csv(csv_file, start_date, end_date, sensors_list) #process csv file with dask
 
                 #If the chosen start date is equal or after the start date of API -> request data from API
-                elif start_date >= start_date_API:
+                elif (start_date >= start_date_API):  # If the end_date is greater than the end_date _API the latter will be used
                     print("Requesting from API")
                     sensors_values = self.req_ARPA_data_API(client, start_date, end_date, sensors_list) #request data from ARPA API
 
