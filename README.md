@@ -12,6 +12,9 @@ You can use this plugin without API token (check whether it is necessary. Token 
 ```
 >> pip install sodapy
 ```
+```
+>> pip install pandas
+```
 
 ```
 >> pip install dask
