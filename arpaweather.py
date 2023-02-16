@@ -21,9 +21,9 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QVariant, QDate, QDateTime
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QVariant, QDate, QDateTime, QSize, Qt
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QMessageBox, QFileDialog, QDateTimeEdit, QStatusBar
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QFileDialog, QDateTimeEdit, QStatusBar, QProgressBar, QProgressDialog, QApplication
 from qgis.core import QgsProject, QgsVectorLayer, QgsFields, QgsField, QgsGeometry, QgsPointXY, QgsFeature, Qgis, QgsVectorFileWriter, QgsApplication
 from qgis.utils import iface
 from PyQt5.QtCore import QTextCodec
@@ -120,7 +120,6 @@ class ARPAweather:
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('ARPAweather', message)
-
 
     def add_action(
         self,
@@ -330,7 +329,6 @@ class ARPAweather:
         Returns:
             pandas.DataFrame: dataframe with idsensore, data and valore of the weather sensors within the specific time period
         """
-        iface.messageBar().pushMessage("Download", "Requesting data from ARPA API", level=Qgis.Info)
         # Select the Open Data Lombardia Meteo sensors dataset
         weather_sensor_id = "647i-nhxk"
 
@@ -429,7 +427,6 @@ class ARPAweather:
                 print((f"The file {filename} does not exist in this folder"))
         
         else:
-            iface.messageBar().pushMessage("Download", f"{year}.csv already exists. It won't be downloaded.", level=Qgis.Info)
             print(f"{year}.csv already exists. It won't be downloaded.")
 
     def process_ARPA_csv(self, csv_file, start_date, end_date, sensors_list):
@@ -445,7 +442,6 @@ class ARPAweather:
         Returns:
             df (Dask dataframe): Computed filtered Dask dataframe
         """
-        iface.messageBar().pushMessage("Processing", "Processing CSV file.", level=Qgis.Info)
 
         print("--- Starting processing csv data ---")
         print(("The time range used for the processing is {start_date} to {end_date}").format(start_date=start_date,end_date=end_date))
@@ -561,10 +557,15 @@ class ARPAweather:
         :param index: the index of the selected item in the combo box
         """
         # Get the selected year from the combo box and the current date and last day of previous month
-        sel_year = int(float(self.dlg.cb_list_years.currentText()))
+
         today = datetime.today()
         first_day_of_month = datetime(today.year, today.month, 1)
         last_day_of_prev_month = first_day_of_month - timedelta(days=1)
+
+        if self.dlg.cb_list_years.count() == 0:
+            sel_year = int(today.year)
+        else:
+            sel_year = int(self.dlg.cb_list_years.currentText())
 
         # If the selected year is the current year, set the minimum date to the beginning of the year and the maximum date to the end of the previous month
         if sel_year == int(today.year):
@@ -588,7 +589,18 @@ class ARPAweather:
 
         self.dlg.dtStartTime_csv.setDateTime(csv_cal_start_date)
         self.dlg.dtEndTime_csv.setDateTime(csv_cal_end_date)
-
+    
+    def progdialog(self,progress):
+        p_dialog = QProgressDialog('ARPA Weather Plugin processing...Please wait!', 'Cancel', 0, 100)
+        p_dialog.setWindowTitle("Progress")
+        p_dialog.setWindowModality(Qt.WindowModal)
+        bar = QProgressBar(p_dialog)
+        bar.setTextVisible(True)
+        bar.setValue(progress)
+        p_dialog.setBar(bar)
+        p_dialog.setMinimumWidth(300)
+        p_dialog.show()
+        return p_dialog, bar
         
 
 # --- RUN ------------
@@ -608,7 +620,7 @@ class ARPAweather:
             self.dlg.rb1.setChecked(True) # Radio button 1 (API) checked at the beginning
             self.dlg.rb1.toggled.connect(self.toggle_group_box)
             self.dlg.rb2.toggled.connect(self.toggle_group_box)
-    
+
 
         # Add sensors type
         self.dlg.cbSensorsType.clear()
@@ -700,6 +712,12 @@ class ARPAweather:
 
         if result:
 
+            # Progress bar
+            p_dialog, bar = self.progdialog(0)
+            bar.setMaximum(100)
+            bar.setValue(0)
+            QApplication.processEvents()
+
             # Get the start and the end date from the gui
             if self.dlg.rb1.isChecked():
                 start_date = self.dlg.dtStartTime_api.dateTime().toPyDateTime()
@@ -719,6 +737,7 @@ class ARPAweather:
             client = self.connect_ARPA_api(arpa_token)
 
             with client:
+
                 # Dataframe containing sensors information
                 sensors_df = self.ARPA_sensors_info(client)
 
@@ -736,6 +755,10 @@ class ARPAweather:
                 elif start_date > end_date:
                     QMessageBox.warning(None, "Invalid Date Range", "Start date must be before end date")
                     return
+
+                # Updates the progress bar
+                bar.setValue(10)
+                QApplication.processEvents()
 
                 # Request time series
                 if start_date < start_date_API:
@@ -757,6 +780,10 @@ class ARPAweather:
                 
                 if sensor_sel == "Direzione Vento":
                     sensor_test_agg = self.aggregate_group_data_wind_dir(sensors_values)
+
+                # Updates the progress bar
+                bar.setValue(70)
+                QApplication.processEvents()
 
                 # Merge the values with the sensors info
                 merged_df = pd.merge(sensor_test_agg, sensors_df, on='idsensore')
@@ -861,7 +888,10 @@ class ARPAweather:
                     
                     # Write message
                     self.iface.messageBar().pushMessage("Success", "Output file written at " + filename, level=Qgis.Success, duration=3)
-
+            
+                #Updates the progress bar
+                bar.setValue(100)
+                QApplication.processEvents()
             pass
 
     QgsApplication.instance().aboutToQuit.connect(cleanup_csv_files)
