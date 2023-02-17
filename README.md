@@ -5,9 +5,11 @@ This repositories contains the complete plugin to process ARPA meteorological se
 ## Installation
 In order to use this plugin you need to install Sodapy and Dask libraries.
 
+### Windows dependencies installation
 Open the OSGeo4W Shell and type the following command.
 
 You can use this plugin without API token (check whether it is necessary. Token allows access to all datasets on Open Data Lombardia on Socrata API without limits).
+You need to install the following libraries:
 
 ```
 >> pip install sodapy
@@ -20,9 +22,10 @@ You can use this plugin without API token (check whether it is necessary. Token 
 >> pip install dask
 ```
 
-This plugin allows to obtain relevant statistics and multipoint layers for different sensors.
+### Linux dependencies installation
+....
 
-TO DO: option to save time series for advanced users that need to request data.
+
 
 ## ARPA data structure
 The data available from ARPA Lombardia can be requested from the Open Data Lombardia catalog.
@@ -35,6 +38,7 @@ It must be noted that the data are available in 2 different ways:
 
 
 ## Plugin
+This plugin allows to obtain relevant statistics and multipoint layers for different sensors.
 The plugin automatically request data from API or CSV files depending on the selected date.
 The user is allowed to select the dates in the correct time range.
 
@@ -48,4 +52,6 @@ The CSV files are processed using Dask Python library.
 - When QGIS is closed, all CSV files downloaded are deleted
 - If the CSV for the selected year is already available the CSV file won't be downloaded.
 
-## Add filter outliers in the time series?
+TO DO: 
+- Option to save time series for advanced users that need to request data.
+- Add filter outliers in the time series
