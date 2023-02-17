@@ -6,9 +6,7 @@ This repositories contains the complete plugin to process ARPA meteorological se
 In order to use this plugin you need to install Sodapy and Dask libraries.
 
 ### Windows dependencies installation
-Open the OSGeo4W Shell and type the following command.
-
-You can use this plugin without API token (check whether it is necessary. Token allows access to all datasets on Open Data Lombardia on Socrata API without limits).
+Open the OSGeo4W Shell and type the following commands.
 You need to install the following libraries:
 
 ```
@@ -41,7 +39,7 @@ It must be noted that the data are available in 2 different ways:
 This plugin allows to obtain relevant statistics and multipoint layers for different sensors.
 The plugin automatically request data from API or CSV files depending on the selected date.
 The user is allowed to select the dates in the correct time range.
-
+You can use this plugin without API token (check whether it is necessary. Token allows access to all datasets on Open Data Lombardia on Socrata API without limits).
 The CSV files are automatically downloaded by the plugin.
 
 Sensors information are converted into a DataFrame using Pandas.
