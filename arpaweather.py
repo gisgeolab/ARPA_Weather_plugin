@@ -38,30 +38,32 @@ from zipfile import ZipFile
 import os
 import time
 import sys
+import subprocess
 
 import os
 import sys
+
 plugin_dir = os.path.dirname(__file__)
-try:
-    pip.main(['install','--upgrade','pip'])
+
+filename = "get-pip.py"
+command = f"python {os.path.abspath(filename)}"
+subprocess.call(command, shell=True)
+required_packages = ['dask', 'pandas', 'sodapy']
+try: 
     import pip
+    pip.main(['install','--upgrade','pip'])
     print('pip imported 2')
 except:
-    import pip
-
-
-try:
+    for package in required_packages:
+        command = f"pip install {package}"
+        subprocess.call(command, shell=True)
+    print('pip installed')
+    
+if all(package in sys.modules for package in required_packages):
     from sodapy import Socrata
     import pandas as pd
     import dask.dataframe as dd
-except:
-    import subprocess
-    subprocess.call([sys.exec_prefix + '/python', "-m", 'pip', 'install', 'sodapy'])
-    subprocess.call([sys.exec_prefix + '/python', "-m", 'pip', 'install', 'dask'])
-    subprocess.call([sys.exec_prefix + '/python', "-m", 'pip', 'install', 'pandas'])
-    from sodapy import Socrata
-    import pandas as pd
-    import dask.dataframe as dd
+    print('required packages imported')
     
 
 # Initialize Qt resources from file resources.py
