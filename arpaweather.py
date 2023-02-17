@@ -44,9 +44,12 @@ import sys
 plugin_dir = os.path.dirname(__file__)
 try:
     import pip
+    print('pip imported 1')
 except:
+    exec(os.path.join(plugin_dir, 'get_pip.py'))
     import pip
     pip.main(['install','--upgrade','pip'])
+    print('pip imported 2')
 
 try:
     from sodapy import Socrata
