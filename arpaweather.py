@@ -39,20 +39,28 @@ import os
 import time
 import sys
 
+import os
+import sys
+plugin_dir = os.path.dirname(__file__)
 try:
-    import dask.dataframe as dd
-    import pandas as pd
-    from sodapy import Socrata
-
+    import pip
 except:
-    try:
-        os.system('"' + os.path.join(sys.prefix, 'scripts', 'pip.exe') + '" install dask')
-        os.system('"' + os.path.join(sys.prefix, 'scripts', 'pip.exe') + '" install pandas')
-        os.system('"' + os.path.join(sys.prefix, 'scripts', 'pip.exe') + '" install sodapy')
-    finally:
-        import dask.dataframe as dd
-        import pandas as pd
-        from sodapy import Socrata
+    import pip
+    pip.main(['install','--upgrade','pip'])
+
+try:
+    from sodapy import Socrata
+    import pandas as pd
+    import dask.dataframe as dd
+except:
+    import subprocess
+    subprocess.call([sys.exec_prefix + '/python', "-m", 'pip', 'install', 'sodapy'])
+    subprocess.call([sys.exec_prefix + '/python', "-m", 'pip', 'install', 'dask'])
+    subprocess.call([sys.exec_prefix + '/python', "-m", 'pip', 'install', 'pandas'])
+    from sodapy import Socrata
+    import pandas as pd
+    import dask.dataframe as dd
+    
 
 # Initialize Qt resources from file resources.py
 from .resources import *
