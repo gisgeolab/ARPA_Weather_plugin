@@ -29,42 +29,15 @@ from qgis.utils import iface
 from PyQt5.QtCore import QTextCodec
 
 # Import libraries
-#from sodapy import Socrata
-#import pandas as pd
-#import dask.dataframe as dd
+from sodapy import Socrata
+import pandas as pd
+import dask.dataframe as dd
 from datetime import datetime, timedelta
 import requests
 from zipfile import ZipFile
 import os
 import time
-import sys
-import subprocess
-
 import os
-import sys
-
-plugin_dir = os.path.dirname(__file__)
-
-filename = "get-pip.py"
-command = f"python {os.path.abspath(filename)}"
-subprocess.call(command, shell=True)
-required_packages = ['dask', 'pandas', 'sodapy']
-try: 
-    import pip
-    pip.main(['install','--upgrade','pip'])
-    print('pip imported 2')
-except:
-    for package in required_packages:
-        command = f"pip install {package}"
-        subprocess.call(command, shell=True)
-    print('pip installed')
-    
-if all(package in sys.modules for package in required_packages):
-    from sodapy import Socrata
-    import pandas as pd
-    import dask.dataframe as dd
-    print('required packages imported')
-    
 
 # Initialize Qt resources from file resources.py
 from .resources import *
