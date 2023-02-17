@@ -1,6 +1,6 @@
-# ARPA Meteorological Sensors Plugin
+# ARPA Weather Sensors Plugin
 
-This repositories contains the complete plugin to process ARPA meteorological sensors time series. 
+This repositories contains the complete plugin to process ARPA weather sensors time series. 
 
 ## Installation
 In order to use this plugin you need to install Sodapy and Dask libraries.
