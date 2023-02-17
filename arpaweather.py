@@ -21,25 +21,38 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QVariant, QDate, QDateTime, QSize, Qt
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QVariant, Qt
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QMessageBox, QFileDialog, QDateTimeEdit, QStatusBar, QProgressBar, QProgressDialog, QApplication
-from qgis.core import QgsProject, QgsVectorLayer, QgsFields, QgsField, QgsGeometry, QgsPointXY, QgsFeature, Qgis, QgsVectorFileWriter, QgsApplication
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QFileDialog, QProgressBar, QProgressDialog, QApplication
+from qgis.core import QgsProject, QgsVectorLayer, QgsField, QgsGeometry, QgsPointXY, QgsFeature, Qgis, QgsVectorFileWriter, QgsApplication
 from qgis.utils import iface
 from PyQt5.QtCore import QTextCodec
 
 # Import libraries
-from sodapy import Socrata
-import pandas as pd
+#from sodapy import Socrata
+#import pandas as pd
+#import dask.dataframe as dd
 from datetime import datetime, timedelta
 import requests
-from io import BytesIO
 from zipfile import ZipFile
 import os
 import time
-import json
-import numpy as np
-import dask.dataframe as dd
+import sys
+
+try:
+    import dask.dataframe as dd
+    import pandas as pd
+    from sodapy import Socrata
+
+except:
+    try:
+        os.system('"' + os.path.join(sys.prefix, 'scripts', 'pip.exe') + '" install dask')
+        os.system('"' + os.path.join(sys.prefix, 'scripts', 'pip.exe') + '" install pandas')
+        os.system('"' + os.path.join(sys.prefix, 'scripts', 'pip.exe') + '" install sodapy')
+    finally:
+        import dask.dataframe as dd
+        import pandas as pd
+        from sodapy import Socrata
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -353,7 +366,7 @@ class ARPAweather:
         df['valore'] = df['valore'].astype('float32')
         df['idsensore'] = df['idsensore'].astype('int32')
         df['data'] = pd.to_datetime(df['data'])
-        df = df.sort_values(by='data', ascending=True).reset_index(drop=True)
+        # df = df.sort_values(by='data', ascending=True).reset_index(drop=True)
 
         # Filter with selected sensors list
         try:
@@ -405,9 +418,7 @@ class ARPAweather:
                     #print("\rDownloaded: {:0.2f} MB".format(percentage), end="")
                 
             elapsed = time.time() - t
-            
             print((f'\nDownloading {filename} -> Completed. Time required for download: {elapsed:0.2f} s.'))
-
             print((f"Starting unzipping: {filename}"))
 
             #Loading the .zip and creating a zip object
@@ -444,39 +455,27 @@ class ARPAweather:
         """
 
         print("--- Starting processing csv data ---")
-        print(("The time range used for the processing is {start_date} to {end_date}").format(start_date=start_date,end_date=end_date))
+        print(f"The time range used for the processing is {start_date} to {end_date}")
         
         #Read csv file with Dask dataframe
         csv_file = os.path.join(tmp_dir, csv_file)
-        df = dd.read_csv(csv_file, usecols=['IdSensore','Data','Valore', 'Stato']) 
-        
-        # Rename columns to match API column names
-        df = df.rename(columns={'IdSensore': 'idsensore', 'Data': 'data', 'Valore': 'valore', 'Stato':'stato'})
+        df = dd.read_csv(csv_file, usecols=['IdSensore','Data','Valore', 'Stato']).rename(columns={'IdSensore': 'idsensore', 'Data': 'data', 'Valore': 'valore', 'Stato':'stato'}).astype({'idsensore': 'int32', 'data': 'datetime64[ns]', 'valore': 'float32', 'stato': 'category'})
         
         # Format data types
         df['valore'] = df['valore'].astype('float32')
         df['idsensore'] = df['idsensore'].astype('int32')
         df['data'] = dd.to_datetime(df.data, format='%d/%m/%Y %H:%M:%S')
-        df['stato'] = df['stato'].astype(str)
+        df['stato'] = df['stato'].astype('category')
         
-        # Filter out invalid data and select sensors within the specified range and list
-        df = df[df['valore'] != -9999]
-        df = df.loc[(df['data'] >= start_date) & (df['data'] <= end_date)]
-        sensors_list = list(map(int, sensors_list))
-        df = df[df['idsensore'].isin(sensors_list)] #keep only sensors in the list (for example providing a list of temperature sensors, will keep only those)
-        df = df[df.stato.isin(["VA", "VV"])] #keep only validated data identified by stato equal to VA and VV
-        df = df.drop(['stato'], axis=1)
-        
+        # Filter out invalid data and select sensors within the specified range and set of sensors
+        sensors_set = set(map(int, sensors_list))
+        df = df[(df['valore'] != -9999) & (df['data'] >= start_date) & (df['data'] <= end_date) & (df['idsensore'].isin(sensors_set)) & (df['stato'].isin(["VA", "VV"]))]
+               
         # Sort the dataframe by date
-        df = df.sort_values(by='data', ascending=True).reset_index(drop=True)
-        
-        print("Starting computing dataframe")
+        # df = df.sort_values(by='data', ascending=True).reset_index(drop=True)
         
         #Compute df
-        t = time.time()
         df = df.compute()
-        elapsed = time.time() - t
-        print("Time used for computing dataframe {time:0.2f} s.".format(time=elapsed))
         
         return df 
 
@@ -765,12 +764,13 @@ class ARPAweather:
                     print("Requesting CSV. This will take a while.")
                     sensors_values = self.download_extract_csv_from_year(str(year), switcher) #download the csv corresponding to the selected year
                     csv_file = str(year)+'.csv'
-
+                    bar.setValue(50)
                     sensors_values = self.process_ARPA_csv(csv_file, start_date, end_date, sensors_list) #process csv file with dask
 
                 #If the chosen start date is equal or after the start date of API -> request data from API
                 elif (start_date >= start_date_API):  # If the end_date is greater than the end_date _API the latter will be used
                     print("Requesting from API")
+                    bar.setValue(50)
                     sensors_values = self.req_ARPA_data_API(client, start_date, end_date, sensors_list) #request data from ARPA API
 
 
@@ -798,12 +798,7 @@ class ARPAweather:
                 # merged_df.to_csv('./test.csv', index=False)
 
                 # Create vector layer
-                
-                layer_date_start = max(start_date_API, start_date)
-                layer_date_end = min(end_date_API, end_date)
-
-
-                layer = QgsVectorLayer("Point?crs=EPSG:4326", sensor_sel+' ({start} / {end})'.format(start=layer_date_start, end=layer_date_end), "memory")
+                layer = QgsVectorLayer("Point?crs=EPSG:4326", sensor_sel+' ({start} / {end})'.format(start=start_date, end=end_date), "memory")
 
                 if sensor_sel != "Direzione Vento":
                     layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("mean", QVariant.Double), QgsField("max", QVariant.Double),
