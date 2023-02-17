@@ -43,7 +43,6 @@ import os
 import sys
 plugin_dir = os.path.dirname(__file__)
 try:
-    exec(os.path.join(plugin_dir, 'get_pip.py'))
     pip.main(['install','--upgrade','pip'])
     import pip
     print('pip imported 2')
