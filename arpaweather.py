@@ -21,9 +21,9 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QVariant, Qt
-from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QMessageBox, QFileDialog, QProgressBar, QProgressDialog, QApplication
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QVariant, Qt, QUrl
+from qgis.PyQt.QtGui import QIcon, QDesktopServices
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QFileDialog, QProgressBar, QProgressDialog, QApplication, QLabel
 from qgis.core import QgsProject, QgsVectorLayer, QgsField, QgsGeometry, QgsPointXY, QgsFeature, Qgis, QgsVectorFileWriter, QgsApplication
 from qgis.utils import iface
 from PyQt5.QtCore import QTextCodec
@@ -244,7 +244,7 @@ class ARPAweather:
 
         return client
 
-    def ARPA_sensors_info(self, client) -> pd.DataFrame:
+    def ARPA_sensors_info(self, client, selected_provinces) -> pd.DataFrame:
         """
         Convert the ARPA sensors information obtained from a Socrata client to a Pandas dataframe and fix the data types.
 
@@ -271,6 +271,12 @@ class ARPAweather:
         sensors_df["datastart"] = pd.to_datetime(sensors_df["datastart"])
         sensors_df["datastop"] = pd.to_datetime(sensors_df["datastop"])
         sensors_df = sensors_df.drop(columns=[":@computed_region_6hky_swhk", ":@computed_region_ttgh_9sm5"])
+        
+        
+        if len(selected_provinces) == 0:
+            selected_provinces = ['BG', 'BS', 'CO', 'CR', 'LC', 'LO', 'MB', 'MI', 'MN', 'PV', 'SO', 'VA']
+            
+        sensors_df = sensors_df[sensors_df['provincia'].isin(selected_provinces)]
 
         return sensors_df
 
@@ -351,7 +357,7 @@ class ARPAweather:
         df['valore'] = df['valore'].astype('float32')
         df['idsensore'] = df['idsensore'].astype('int32')
         df['data'] = pd.to_datetime(df['data'])
-        # df = df.sort_values(by='data', ascending=True).reset_index(drop=True)
+
 
         # Filter with selected sensors list
         try:
@@ -444,7 +450,7 @@ class ARPAweather:
         
         #Read csv file with Dask dataframe
         csv_file = os.path.join(tmp_dir, csv_file)
-        df = dd.read_csv(csv_file, usecols=['IdSensore','Data','Valore', 'Stato']).rename(columns={'IdSensore': 'idsensore', 'Data': 'data', 'Valore': 'valore', 'Stato':'stato'}).astype({'idsensore': 'int32', 'data': 'datetime64[ns]', 'valore': 'float32', 'stato': 'category'})
+        df = dd.read_csv(csv_file, usecols=['IdSensore','Data','Valore', 'Stato']).rename(columns={'IdSensore': 'idsensore', 'Data': 'data', 'Valore': 'valore', 'Stato':'stato'})
         
         # Format data types
         df['valore'] = df['valore'].astype('float32')
@@ -452,9 +458,14 @@ class ARPAweather:
         df['data'] = dd.to_datetime(df.data, format='%d/%m/%Y %H:%M:%S')
         df['stato'] = df['stato'].astype('category')
         
-        # Filter out invalid data and select sensors within the specified range and set of sensors
-        sensors_set = set(map(int, sensors_list))
-        df = df[(df['valore'] != -9999) & (df['data'] >= start_date) & (df['data'] <= end_date) & (df['idsensore'].isin(sensors_set)) & (df['stato'].isin(["VA", "VV"]))]
+        #Filter using the dates
+        df = df[df['valore'] != -9999]
+        df = df.loc[(df['data'] >= start_date) & (df['data'] <= end_date)]
+        #Filter on temperature sensors list
+        sensors_list = list(map(int, sensors_list))
+        df = df[df['idsensore'].isin(sensors_list)] #keep only sensors in the list (for example providing a list of temperature sensors, will keep only those)
+        df = df[df.stato.isin(["VA", "VV"])] #keep only validated data identified by stato equal to VA and VV
+        df = df.drop(['stato'], axis=1)
                
         # Sort the dataframe by date
         # df = df.sort_values(by='data', ascending=True).reset_index(drop=True)
@@ -479,6 +490,7 @@ class ARPAweather:
         """
 
         # Group the DataFrame by 'idsensore' and compute the statistical metrics
+        df = df.set_index('data')
         grouped = df.groupby('idsensore')['valore'].agg(['mean', 'max', 'min', 'std', 'count'])
 
         # Reset the index to make 'idsensore' a column again
@@ -517,22 +529,6 @@ class ARPAweather:
                 except Exception as e:
                     print("Error while deleting file:", e)
 
-    def toggle_group_box(self):
-        """
-        Toggles the visibility of the group boxes based on which radio button is selected.
-
-        If the first radio button is checked, the first group box is enabled and the second group box is disabled.
-        If the second radio button is checked, the first group box is disabled and the second group box is enabled.
-        """
-        if self.dlg.rb1.isChecked():
-            # If the first radio button is checked, enable the first group box and disable the second group box
-            self.dlg.gb1.setEnabled(True)
-            self.dlg.gb2.setEnabled(False)
-        else:
-            # If the second radio button is checked, disable the first group box and enable the second group box
-            self.dlg.gb1.setEnabled(False)
-            self.dlg.gb2.setEnabled(True)
-
     def update_calendar(self, index):
         """
         Updates the minimum and maximum dates of the date-time edit widgets in the dialog based on the year selected
@@ -560,19 +556,19 @@ class ARPAweather:
             csv_cal_end_date = datetime(sel_year, 12, 31, 23, 59, 0)
 
         # Set the display format, calendar popup, minimum date, maximum date, start date, and end date of the date-time edit widgets
-        self.dlg.dtStartTime_csv.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
-        self.dlg.dtEndTime_csv.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
+        self.dlg.dtStartTime.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
+        self.dlg.dtEndTime.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
 
-        self.dlg.dtStartTime_csv.setCalendarPopup(True)
-        self.dlg.dtEndTime_csv.setCalendarPopup(True)
+        self.dlg.dtStartTime.setCalendarPopup(True)
+        self.dlg.dtEndTime.setCalendarPopup(True)
 
-        self.dlg.dtStartTime_csv.setMinimumDateTime(csv_cal_start_date)
-        self.dlg.dtStartTime_csv.setMaximumDateTime(csv_cal_end_date)
-        self.dlg.dtEndTime_csv.setMinimumDateTime(csv_cal_start_date)
-        self.dlg.dtEndTime_csv.setMaximumDateTime(csv_cal_end_date)
+        self.dlg.dtStartTime.setMinimumDateTime(csv_cal_start_date)
+        self.dlg.dtStartTime.setMaximumDateTime(csv_cal_end_date)
+        self.dlg.dtEndTime.setMinimumDateTime(csv_cal_start_date)
+        self.dlg.dtEndTime.setMaximumDateTime(csv_cal_end_date)
 
-        self.dlg.dtStartTime_csv.setDateTime(csv_cal_start_date)
-        self.dlg.dtEndTime_csv.setDateTime(csv_cal_end_date)
+        self.dlg.dtStartTime.setDateTime(csv_cal_start_date)
+        self.dlg.dtEndTime.setDateTime(csv_cal_end_date)
     
     def progdialog(self,progress):
         p_dialog = QProgressDialog('ARPA Weather Plugin processing...Please wait!', 'Cancel', 0, 100)
@@ -586,6 +582,81 @@ class ARPAweather:
         p_dialog.show()
         return p_dialog, bar
         
+    def update_CSV(self):
+            self.dlg.cb_list_years.clear()
+            years_list = list(switcher.keys())
+            self.dlg.cb_list_years.addItems(years_list)
+            sel_year = int(self.dlg.cb_list_years.currentText())
+
+            today = datetime.today()
+            first_day_of_month = datetime(today.year, today.month, 1)
+            last_day_of_prev_month = first_day_of_month - timedelta(days=1)
+            
+            # Delimit selectable dates 
+            # For current year CSV let select only dates up to the previous month
+            if sel_year == int(today.year):
+                csv_cal_start_date = datetime(sel_year, 1, 1, 0, 0, 0)
+                csv_cal_end_date = datetime(sel_year, today.month-1, last_day_of_prev_month.day, 23, 59, 0) # minus 1 to get the previous month with respect to current one
+            else: 
+                csv_cal_start_date = datetime(sel_year, 1, 1, 0, 0, 0)
+                csv_cal_end_date = datetime(sel_year, 12, 31, 23, 59, 0)
+
+            self.dlg.dtStartTime.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
+            self.dlg.dtEndTime.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
+            self.dlg.dtStartTime.setCalendarPopup(True)
+            self.dlg.dtEndTime.setCalendarPopup(True)
+
+            self.dlg.dtStartTime.setMinimumDateTime(csv_cal_start_date)
+            self.dlg.dtStartTime.setMaximumDateTime(csv_cal_end_date)
+            self.dlg.dtEndTime.setMinimumDateTime(csv_cal_start_date)
+            self.dlg.dtEndTime.setMaximumDateTime(csv_cal_end_date)
+
+            self.dlg.dtStartTime.setDateTime(csv_cal_start_date)
+            self.dlg.dtEndTime.setDateTime(csv_cal_end_date)
+    
+    def outlier_filter_iqr(self, df):
+        """
+        Function for iltering using quantiles
+        
+            Parameters:
+                df (dataframe): ARPA dataframe containing at least the following columns: "idsensore"(int), "data"(datetime) and "valore"(float)
+                sensors_list (int list): list of sensors
+
+            Returns:
+                df(dataframe): filtered dataframe using IQR
+        
+        """
+
+        Q1 = df['valore'].quantile(0.25)
+        Q3 = df['valore'].quantile(0.75)
+        IQR = Q3 - Q1
+        df = df[~((df['valore'] < (Q1 - 1.5 * IQR)) | (df['valore'] > (Q3 + 1.5 * IQR)))]
+
+        return df
+    
+    def outlier_filter_zscore(self, df, threshold=3):
+        """
+        Filter dataframe using Z-Score method
+
+            Parameters:
+                df (pandas.DataFrame): ARPA dataframe with columns "idsensore" (int), "data" (datetime), and "valore" (float)
+                threshold (float, optional): Z-Score threshold to use for filtering, default is 3
+
+            Returns:
+                pandas.DataFrame: filtered dataframe using Z-Score method
+            
+        """
+        filtered_df = pd.DataFrame(columns=['idsensore', 'data', 'valore'])
+        
+        for sensor in df['idsensore'].unique():
+            sensor_df = df[df['idsensore'] == sensor]
+            mean = sensor_df['valore'].mean()
+            std = sensor_df['valore'].std()
+            z = (sensor_df['valore'] - mean) / std
+            sensor_df = sensor_df[(z.abs() < threshold)]
+            filtered_df = pd.concat([filtered_df, sensor_df], ignore_index=True)
+            
+        return filtered_df
 
 # --- RUN ------------
 
@@ -598,25 +669,38 @@ class ARPAweather:
             self.first_start = False
             self.dlg = ARPAweatherDialog()
             self.dlg.pbOutputSave.clicked.connect(self.select_output_file)
-            # Group box toggled
-            self.dlg.gb1.setEnabled(True) # Set group box 1 (API) enabled
-            self.dlg.gb2.setEnabled(False) # Set group box 2 (CSV) disabled
-            self.dlg.rb1.setChecked(True) # Radio button 1 (API) checked at the beginning
-            self.dlg.rb1.toggled.connect(self.toggle_group_box)
-            self.dlg.rb2.toggled.connect(self.toggle_group_box)
+        
+        # Group box toggled
+        self.dlg.rb1.setChecked(True) # Radio button 1 (API) checked at the beginning
 
-
-        # Add sensors type
+        # Clear widgets, put only those you want to reset each time the Plugin is opened
         self.dlg.cbSensorsType.clear()
         self.dlg.cbSensorsType.addItems([str(sensor) for sensor in sensors_types])
+        
         self.dlg.leOutputFileName.clear()
+        
         self.dlg.cb_list_years.clear()
+        self.dlg.cb_list_years.addItem(list(switcher.keys())[0])
+        self.dlg.cb_list_years.currentIndexChanged.connect(self.update_calendar)
+        
+        self.dlg.cbOutliersRemoval.clear()
+        self.dlg.cbOutliersRemoval.addItems(['None', 'IQR', 'Z-Score'])
 
         # Add documentation link
         self.dlg.labelLinkDoc.setText('<a href="https://github.com/capizziemanuele/ARPA_Weather_plugin">GitHub Doc</a>')
         self.dlg.labelLinkDoc.setOpenExternalLinks(True)
-
-
+        
+        # Folder contanining complete CSV
+        labelHistCSV = self.dlg.labelHistoricalCSV
+        labelHistCSV.setText(f'<a href="{tmp_dir}">Complete CSV</a>')
+        
+        # Create a function to handle the label click event
+        def open_folder(event):
+            QDesktopServices.openUrl(QUrl.fromLocalFile(tmp_dir))
+            
+        # Connect the label click event to the open_folder function
+        labelHistCSV.mousePressEvent = open_folder
+        
         # Modifiy initial widgets
         try:
             # Connect to the ARPA API
@@ -636,58 +720,46 @@ class ARPAweather:
         except requests.exceptions.RequestException as e:
             # Raise an error message if there is an issue with the request
             QMessageBox.warning(self.dlg, "Error", str(e))
-
-
-        # Options for the calendar (date selection)
-        # API calendar - Delimit also dates
-        self.dlg.dtStartTime_api.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
-        self.dlg.dtEndTime_api.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
-        self.dlg.dtStartTime_api.setCalendarPopup(True)
-        self.dlg.dtEndTime_api.setCalendarPopup(True)
-
-        self.dlg.dtStartTime_api.setMinimumDateTime(start_date_API)
-        self.dlg.dtStartTime_api.setMaximumDateTime(end_date_API)
-        self.dlg.dtEndTime_api.setMinimumDateTime(start_date_API)
-        self.dlg.dtEndTime_api.setMaximumDateTime(end_date_API)
-
-        self.dlg.dtStartTime_api.setDateTime(start_date_API)
-        self.dlg.dtEndTime_api.setDateTime(end_date_API)
-
-
-        # CSV calendar
-        # List of available years in CSV files
-        years_list = list(switcher.keys())
-        self.dlg.cb_list_years.addItems(years_list)
-        sel_year = int(self.dlg.cb_list_years.currentText())
-        self.dlg.cb_list_years.currentIndexChanged.connect(self.update_calendar)
-
-        today = datetime.today()
-        first_day_of_month = datetime(today.year, today.month, 1)
-        last_day_of_prev_month = first_day_of_month - timedelta(days=1)
-        # Delimit selectable dates 
-        # For current year CSV let select only dates up to the previous month
-        if sel_year == int(today.year):
-            csv_cal_start_date = datetime(sel_year, 1, 1, 0, 0, 0)
-            csv_cal_end_date = datetime(sel_year, today.month-1, last_day_of_prev_month.day, 23, 59, 0) # minus 1 to get the previous month with respect to current one
-        else: 
-            csv_cal_start_date = datetime(sel_year, 1, 1, 0, 0, 0)
-            csv_cal_end_date = datetime(sel_year, 12, 31, 23, 59, 0)
-
-        self.dlg.dtStartTime_csv.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
-        self.dlg.dtEndTime_csv.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
-        self.dlg.dtStartTime_csv.setCalendarPopup(True)
-        self.dlg.dtEndTime_csv.setCalendarPopup(True)
-
-        self.dlg.dtStartTime_csv.setMinimumDateTime(csv_cal_start_date)
-        self.dlg.dtStartTime_csv.setMaximumDateTime(csv_cal_end_date)
-        self.dlg.dtEndTime_csv.setMinimumDateTime(csv_cal_start_date)
-        self.dlg.dtEndTime_csv.setMaximumDateTime(csv_cal_end_date)
-
-        self.dlg.dtStartTime_csv.setDateTime(csv_cal_start_date)
-        self.dlg.dtEndTime_csv.setDateTime(csv_cal_end_date)
         
-        # api_start_limit = datetime(datetime.today().year, datetime.today().month, 1)  #not used
+        # Initialize calendar to API dates
+        self.dlg.dtStartTime.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
+        self.dlg.dtEndTime.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
+        self.dlg.dtStartTime.setCalendarPopup(True)
+        self.dlg.dtEndTime.setCalendarPopup(True)
 
+        self.dlg.dtStartTime.setMinimumDateTime(start_date_API)
+        self.dlg.dtStartTime.setMaximumDateTime(end_date_API)
+        self.dlg.dtEndTime.setMinimumDateTime(start_date_API)
+        self.dlg.dtEndTime.setMaximumDateTime(end_date_API)
+
+        # self.dlg.dtStartTime.setDateTime(start_date_API)
+        # self.dlg.dtEndTime.setDateTime(end_date_API)
+        
+        # Functin to update calendar with API dates after creating client connection
+        def update_API():
+            self.dlg.cb_list_years.clear()
+            current_year = list(switcher.keys())[0]  #select last year
+            self.dlg.cb_list_years.addItem(current_year)
+            
+            self.dlg.dtStartTime.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
+            self.dlg.dtEndTime.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
+            self.dlg.dtStartTime.setCalendarPopup(True)
+            self.dlg.dtEndTime.setCalendarPopup(True)
+
+            self.dlg.dtStartTime.setMinimumDateTime(start_date_API)
+            self.dlg.dtStartTime.setMaximumDateTime(end_date_API)
+            self.dlg.dtEndTime.setMinimumDateTime(start_date_API)
+            self.dlg.dtEndTime.setMaximumDateTime(end_date_API)
+
+            self.dlg.dtStartTime.setDateTime(start_date_API)
+            self.dlg.dtEndTime.setDateTime(end_date_API)
+
+        # Update widgets according to API dates
+        self.dlg.rb1.toggled.connect(update_API)
+        
+        # Update widgets according to CSV dates
+        self.dlg.rb2.toggled.connect(self.update_CSV)
+        
         # Show the dialog
         self.dlg.show()
 
@@ -695,7 +767,14 @@ class ARPAweather:
         result = self.dlg.exec_()
 
         if result:
-
+            
+            # Select provinces and create list of selected provinces
+            selected_provinces = []
+            for checkbox in [self.dlg.cb_BG,self.dlg.cb_BS,self.dlg.cb_CO, self.dlg.cb_CR,self.dlg.cb_LC,self.dlg.cb_LO,self.dlg.cb_MB,
+                            self.dlg.cb_MI,self.dlg.cb_MN,self.dlg.cb_PV,self.dlg.cb_SO,self.dlg.cb_VA]:
+                if checkbox.isChecked():
+                    selected_provinces.append(checkbox.text())
+            
             # Progress bar
             p_dialog, bar = self.progdialog(0)
             bar.setMaximum(100)
@@ -704,13 +783,13 @@ class ARPAweather:
 
             # Get the start and the end date from the gui
             if self.dlg.rb1.isChecked():
-                start_date = self.dlg.dtStartTime_api.dateTime().toPyDateTime()
-                end_date = self.dlg.dtEndTime_api.dateTime().toPyDateTime()
+                start_date = self.dlg.dtStartTime.dateTime().toPyDateTime()
+                end_date = self.dlg.dtEndTime.dateTime().toPyDateTime()
                 if start_date.year != end_date.year:
                     QMessageBox.warning(None, "Invalid Date Range", "Dates must be in the same year!")
             else:
-                start_date = self.dlg.dtStartTime_csv.dateTime().toPyDateTime()
-                end_date = self.dlg.dtEndTime_csv.dateTime().toPyDateTime()
+                start_date = self.dlg.dtStartTime.dateTime().toPyDateTime()
+                end_date = self.dlg.dtEndTime.dateTime().toPyDateTime()
 
             # Create client
             if self.dlg.rb1.isChecked():
@@ -723,10 +802,13 @@ class ARPAweather:
             with client:
 
                 # Dataframe containing sensors information
-                sensors_df = self.ARPA_sensors_info(client)
+                sensors_df = self.ARPA_sensors_info(client, selected_provinces)
 
-                # Get the selected sensorfrom the gui
+                # Get the selected sensor from the gui
                 sensor_sel = self.dlg.cbSensorsType.currentText()
+                
+                # Get the selected outlier method from the gui
+                outlier_method_sel = self.dlg.cbOutliersRemoval.currentText()
 
                 # Filter the sensors depending on the "tipologia" field (sensor type)
                 sensors_list = (sensors_df.loc[sensors_df['tipologia'] == sensor_sel]).idsensore.tolist()
@@ -751,13 +833,22 @@ class ARPAweather:
                     csv_file = str(year)+'.csv'
                     bar.setValue(50)
                     sensors_values = self.process_ARPA_csv(csv_file, start_date, end_date, sensors_list) #process csv file with dask
+                    if sensor_sel != "Direzione Vento":  # Don't check for outliers if wind direction
+                        if outlier_method_sel == 'IQR':
+                            sensors_values = sensors_values.groupby('idsensore').apply(self.outlier_filter_iqr)
+                        if outlier_method_sel == 'Z-Score':
+                            sensors_values = self.outlier_filter_zscore(sensors_values)
 
                 #If the chosen start date is equal or after the start date of API -> request data from API
                 elif (start_date >= start_date_API):  # If the end_date is greater than the end_date _API the latter will be used
                     print("Requesting from API")
                     bar.setValue(50)
                     sensors_values = self.req_ARPA_data_API(client, start_date, end_date, sensors_list) #request data from ARPA API
-
+                    if sensor_sel != "Direzione Vento":  # Don't check for outliers if wind direction
+                        if outlier_method_sel == 'IQR':
+                            sensors_values = sensors_values.groupby('idsensore').apply(self.outlier_filter_iqr)
+                        if outlier_method_sel == 'Z-Score':
+                            sensors_values = self.outlier_filter_zscore(sensors_values)
 
                 # Calculate statistics on the whole dataset
                 if sensor_sel != "Direzione Vento":
@@ -875,3 +966,22 @@ class ARPAweather:
             pass
 
     QgsApplication.instance().aboutToQuit.connect(cleanup_csv_files)
+
+
+
+# ---------OLD FUNCTIONS-----------
+    # def toggle_group_box(self):
+    #     """
+    #     Toggles the visibility of the group boxes based on which radio button is selected.
+
+    #     If the first radio button is checked, the first group box is enabled and the second group box is disabled.
+    #     If the second radio button is checked, the first group box is disabled and the second group box is enabled.
+    #     """
+    #     if self.dlg.rb1.isChecked():
+    #         # If the first radio button is checked, enable the first group box and disable the second group box
+    #         self.dlg.gb1.setEnabled(True)
+    #         self.dlg.gb2.setEnabled(False)
+    #     else:
+    #         # If the second radio button is checked, disable the first group box and enable the second group box
+    #         self.dlg.gb1.setEnabled(False)
+    #         self.dlg.gb2.setEnabled(True)
