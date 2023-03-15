@@ -71,6 +71,19 @@ Notes:
 - When QGIS is closed, all CSV files downloaded are deleted. They are stored in the `tmp` folder inside the plugin directory;
 - If the CSV for the selected year is already available the CSV file won't be downloaded.
 
-TO DO: 
-- Option to save time series for advanced users that need to request data.
-- Add filter outliers in the time series
+## Features
+The plugin allows to filter the data:
+- Select data source (API or CSV files);
+- Select the date range for the processing;
+- Sensor type (e.g. Temperature, Precipitation...)
+- Filter outliers for each sensor using IQR or Z-Score (it is aspplied on each sensor separately)
+- Filter by province
+
+## Export
+The plugin shows automatically a multipoint layer containing all the summary statistics as a temporary layer.
+The exports available are:
+- Export the multipoint map layer as geopackage (.gpkg), shapefile(.shp) or CSV file (.csv);
+- Export times-series of the selected data as CSV file;
+- Export sensors information of the selected sensors.
+
+
