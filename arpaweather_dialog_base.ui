@@ -40,7 +40,7 @@
           </font>
          </property>
          <property name="text">
-          <string>Request current month data (API) available from: </string>
+          <string>Request current month data (API) available from </string>
          </property>
         </widget>
        </item>
@@ -89,7 +89,7 @@
           </font>
          </property>
          <property name="text">
-          <string>Request data from previous months/years (CSV data) available from:</string>
+          <string>Request data from previous months/years (CSV data) available from</string>
          </property>
         </widget>
        </item>
