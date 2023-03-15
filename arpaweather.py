@@ -700,9 +700,9 @@ class ARPAweather:
         self.dlg.cbOutliersRemoval.clear()
         self.dlg.cbOutliersRemoval.addItems(['None', 'IQR', 'Z-Score'])
 
-        self.dlg.leOutputFileName.clear()
-        self.dlg.leOutputFileName_ts.clear()
-        self.dlg.leOutputFileName_si.clear()
+        # self.dlg.leOutputFileName.clear()
+        # self.dlg.leOutputFileName_ts.clear()
+        # self.dlg.leOutputFileName_si.clear()
 
         # Add documentation link
         self.dlg.labelLinkDoc.setText('<a href="https://github.com/capizziemanuele/ARPA_Weather_plugin">GitHub Doc</a>')
@@ -734,6 +734,8 @@ class ARPAweather:
             # Update date labels in the GUI
             self.dlg.label_startAPIdate.setText(label_name_start)
             self.dlg.label_endAPIdate.setText(label_name_end)
+
+            self.dlg.label_CSVfirstyear.setText(list(switcher.keys())[-1])
 
         except requests.exceptions.RequestException as e:
             # Raise an error message if there is an issue with the request
@@ -988,7 +990,9 @@ class ARPAweather:
                     try: 
                         if filename_ts.endswith(".csv"):
                             # Save as csv
-                            sensors_values_csv = sensors_values.sort_values(['idsensore', 'data'], ascending=[True, True])
+                            sensors_values_csv = sensors_values.reset_index(drop=True)
+                            sensors_values_csv = sensors_values_csv.sort_values(['idsensore', 'data'], ascending=[True, True])
+                            print(sensors_values_csv)
                             sensors_values_csv.to_csv(filename_ts, index=False, encoding="utf-8-sig")
                         
                         # Write message
