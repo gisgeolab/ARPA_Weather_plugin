@@ -992,7 +992,6 @@ class ARPAweather:
                             # Save as csv
                             sensors_values_csv = sensors_values.reset_index(drop=True)
                             sensors_values_csv = sensors_values_csv.sort_values(['idsensore', 'data'], ascending=[True, True])
-                            print(sensors_values_csv)
                             sensors_values_csv.to_csv(filename_ts, index=False, encoding="utf-8-sig")
                         
                         # Write message
