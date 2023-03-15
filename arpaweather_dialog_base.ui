@@ -657,7 +657,7 @@
          <item>
           <widget class="QLabel" name="label_16">
            <property name="text">
-            <string>Export sensors information [optional]</string>
+            <string>Export sensors information [optional]:</string>
            </property>
           </widget>
          </item>
