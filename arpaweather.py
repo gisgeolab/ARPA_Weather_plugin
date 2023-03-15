@@ -700,9 +700,9 @@ class ARPAweather:
         self.dlg.cbOutliersRemoval.clear()
         self.dlg.cbOutliersRemoval.addItems(['None', 'IQR', 'Z-Score'])
 
-        # self.dlg.leOutputFileName.clear()
-        # self.dlg.leOutputFileName_ts.clear()
-        # self.dlg.leOutputFileName_si.clear()
+        self.dlg.leOutputFileName.clear()
+        self.dlg.leOutputFileName_ts.clear()
+        self.dlg.leOutputFileName_si.clear()
 
         # Add documentation link
         self.dlg.labelLinkDoc.setText('<a href="https://github.com/capizziemanuele/ARPA_Weather_plugin">GitHub Doc</a>')
