@@ -220,6 +220,18 @@ class ARPAweather:
         options |= QFileDialog.ReadOnly
         filename, _filter = QFileDialog.getSaveFileName(self.dlg, "Save Layer As", "", "Shapefiles (*.shp);;Geopackages (*.gpkg);;CSV Files (*.csv)", options=options)
         self.dlg.leOutputFileName.setText(filename)
+    
+    def select_output_file_ts(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.ReadOnly
+        filename, _filter = QFileDialog.getSaveFileName(self.dlg, "Save Layer As", "", "CSV Files (*.csv)", options=options)
+        self.dlg.leOutputFileName_ts.setText(filename)
+
+    def select_output_file_si(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.ReadOnly
+        filename, _filter = QFileDialog.getSaveFileName(self.dlg, "Save Layer As", "", "CSV Files (*.csv)", options=options)
+        self.dlg.leOutputFileName_si.setText(filename)
 
     def connect_ARPA_api(self, token=""):
         """
@@ -262,10 +274,10 @@ class ARPAweather:
         # Convert the sensor information to a Pandas dataframe and fix the data types
         sensors_df = pd.DataFrame(sensors_info)
         sensors_df["idsensore"] = sensors_df["idsensore"].astype("int32")
-        sensors_df["tipologia"] = sensors_df["tipologia"].astype("category")
+        sensors_df["tipologia"] = sensors_df["tipologia"].astype(str)
         sensors_df["idstazione"] = sensors_df["idstazione"].astype("int32")
         sensors_df["quota"] = sensors_df["quota"].astype("int16")
-        sensors_df["unit_dimisura"] = sensors_df["unit_dimisura"].astype("category")
+        sensors_df["unit_dimisura"] = sensors_df["unit_dimisura"].astype(str)
         sensors_df["provincia"] = sensors_df["provincia"].astype("category")
         sensors_df["storico"] = sensors_df["storico"].astype("category")
         sensors_df["datastart"] = pd.to_datetime(sensors_df["datastart"])
@@ -669,6 +681,8 @@ class ARPAweather:
             self.first_start = False
             self.dlg = ARPAweatherDialog()
             self.dlg.pbOutputSave.clicked.connect(self.select_output_file)
+            self.dlg.pbOutputSave_ts.clicked.connect(self.select_output_file_ts)
+            self.dlg.pbOutputSave_si.clicked.connect(self.select_output_file_si)
         
         # Group box toggled
         self.dlg.rb1.setChecked(True) # Radio button 1 (API) checked at the beginning
@@ -685,6 +699,10 @@ class ARPAweather:
         
         self.dlg.cbOutliersRemoval.clear()
         self.dlg.cbOutliersRemoval.addItems(['None', 'IQR', 'Z-Score'])
+
+        self.dlg.leOutputFileName.clear()
+        self.dlg.leOutputFileName_ts.clear()
+        self.dlg.leOutputFileName_si.clear()
 
         # Add documentation link
         self.dlg.labelLinkDoc.setText('<a href="https://github.com/capizziemanuele/ARPA_Weather_plugin">GitHub Doc</a>')
@@ -870,9 +888,6 @@ class ARPAweather:
                 merged_df['tipologia'] = merged_df['tipologia'].astype(str)
                 merged_df['datastart'] = merged_df['datastart'].astype(str)
 
-                # print(os.getcwd())
-                # merged_df.to_csv('./test.csv', index=False)
-
                 # Create vector layer
                 layer = QgsVectorLayer("Point?crs=EPSG:4326", sensor_sel+' ({start} / {end})'.format(start=start_date, end=end_date), "memory")
 
@@ -938,30 +953,75 @@ class ARPAweather:
                 QgsProject.instance().addMapLayer(layer)
                 layer.updateExtents()
 
-                # Save file as shp/gpkg/csv
+                # EXPORT - Save file as shp/gpkg/csv
                 filename = self.dlg.leOutputFileName.text()
                 context = QgsProject.instance().transformContext()
 
                 if filename != "":
-                    if filename.endswith(".shp"):
-                        # Save as a shapefile
-                        options = QgsVectorFileWriter.SaveVectorOptions()
-                        options.driverName = 'ESRI Shapefile'
-                        QgsVectorFileWriter.writeAsVectorFormatV3(layer, filename, context, options)
-                    elif filename.endswith(".gpkg"):
-                        # Save as a geopackage
-                        options = QgsVectorFileWriter.SaveVectorOptions()
-                        options.driverName = 'GPKG'
-                        QgsVectorFileWriter.writeAsVectorFormatV3(layer, filename, context, options)
-                    elif filename.endswith(".csv"):
-                        # Save as csv
-                        merged_df.to_csv(filename, index=False)
-                    
-                    # Write message
-                    self.iface.messageBar().pushMessage("Success", "Output file written at " + filename, level=Qgis.Success, duration=3)
+                    try:
+                        if filename.endswith(".shp"):
+                            # Save as a shapefile
+                            options = QgsVectorFileWriter.SaveVectorOptions()
+                            options.driverName = 'ESRI Shapefile'
+                            QgsVectorFileWriter.writeAsVectorFormatV3(layer, filename, context, options)
+                        elif filename.endswith(".gpkg"):
+                            # Save as a geopackage
+                            options = QgsVectorFileWriter.SaveVectorOptions()
+                            options.driverName = 'GPKG'
+                            QgsVectorFileWriter.writeAsVectorFormatV3(layer, filename, context, options)
+                        elif filename.endswith(".csv"):
+                            # Save as csv
+                            merged_df.to_csv(filename, index=False,  encoding="utf-8-sig")
+                        
+                        # Write message
+                        self.iface.messageBar().pushMessage("Success", "Output file written at " + filename, level=Qgis.Success, duration=3)
+                    except:
+                        bar.deleteLater()
+                        p_dialog.deleteLater()
+                        QApplication.processEvents()
+                        raise Exception("Error while exporting the file.")
+
+                # EXPORT - Save time-series as csv
+                filename_ts = self.dlg.leOutputFileName_ts.text()
+
+                if filename_ts != "":
+                    try: 
+                        if filename_ts.endswith(".csv"):
+                            # Save as csv
+                            sensors_values_csv = sensors_values.sort_values(['idsensore', 'data'], ascending=[True, True])
+                            sensors_values_csv.to_csv(filename_ts, index=False, encoding="utf-8-sig")
+                        
+                        # Write message
+                        self.iface.messageBar().pushMessage("Success", "Output file written at " + filename_ts, level=Qgis.Success, duration=3)
+                    except:
+                        bar.deleteLater()
+                        p_dialog.deleteLater()
+                        QApplication.processEvents()
+                        raise Exception("Error while exporting time-series CSV file.")
             
+                # EXPORT - Save sensors information as csv
+                filename_si = self.dlg.leOutputFileName_si.text()
+
+                if filename_si != "":
+                    try:
+                        if filename_si.endswith(".csv"):
+                            # Save as csv
+                            sensors_df_csv = sensors_df.loc[sensors_df['tipologia'] == sensor_sel]
+                            sensors_df_csv.to_csv(filename_si, index=False, encoding="utf-8-sig")
+                        
+                        # Write message
+                        self.iface.messageBar().pushMessage("Success", "Output file written at " + filename_si, level=Qgis.Success, duration=3)
+                    except:
+                        bar.deleteLater()
+                        p_dialog.deleteLater()
+                        QApplication.processEvents()
+                        raise Exception("Error while exporting sensors information CSV file.")
+
+
                 #Updates the progress bar
                 bar.setValue(100)
+                bar.deleteLater()
+                p_dialog.deleteLater()
                 QApplication.processEvents()
             pass
 
