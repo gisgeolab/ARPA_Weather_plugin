@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>734</width>
-    <height>697</height>
+    <height>724</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -46,6 +46,12 @@
        </item>
        <item>
         <widget class="QLabel" name="label_startAPIdate">
+         <property name="minimumSize">
+          <size>
+           <width>150</width>
+           <height>0</height>
+          </size>
+         </property>
          <property name="maximumSize">
           <size>
            <width>120</width>
