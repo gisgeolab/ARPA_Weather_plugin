@@ -9,10 +9,10 @@ To use the ARPA Weather Sensors Plugin, you'll need to install a few libraries f
 Sodapy is a Python library that provides a simple interface for accessing data from the Socrata Open Data API. In the context of the ARPA Weather Sensors Plugin, Sodapy is used to retrieve data from the ARPA Lombardia weather sensors.
 
 <b>pandas</b><br>
-pandas is a powerful data analysis library for Python. It provides data structures for efficiently storing and manipulating large datasets, as well as tools for working with missing data, time series data, and more. In the context of the ARPA Weather Sensors Plugin, Pandas is used to process and analyze the weather sensor data.
+pandas is a powerful data analysis library for Python. It provides data structures for efficiently storing and manipulating large datasets, as well as tools for working with missing data, time series data, and more. In the context of the ARPA Weather Sensors Plugin, pandas is used to process and analyze the weather sensor data.
 
 <b>dask</b><br>
-dask is a flexible parallel computing library for Python. It allows you to process large datasets in parallel, using a variety of distributed computing strategies. In the context of the ARPA Weather Sensors Plugin, Dask is used to speed up the processing of large weather sensor CSV datasets.
+dask is a flexible parallel computing library for Python. It allows you to process large datasets in parallel, using a variety of distributed computing strategies. In the context of the ARPA Weather Sensors Plugin, dask is used to speed up the processing of large weather sensor CSV datasets.
 
 ### Windows
 If you're using Windows, you can install these libraries using the OSGeo4W Shell. Here's how:
@@ -77,7 +77,7 @@ Open QGIS and search for the plugin in the Plugins toolbar.
 ### Choosing the Data Source
 With this plugin, you have the flexibility to choose whether to retrieve data from the Socrata Open Data API for the current month or from yearly CSV files for older data. You can easily select your preferred data source at the beginning of the process, and the plugin will automatically request data from the API or CSV files based on the selected date range.
 
-It is important to note that using this plugin does not require an API token, but you may need one to access all datasets on Open Data Lombardia on Socrata API without any limitations. Additionally, the CSV files are automatically downloaded by the plugin, and processed using the Dask Python library.
+It is important to note that using this plugin does not require an API token, but you may need one to access all datasets on Open Data Lombardia on Socrata API without any limitations. Additionally, the CSV files are automatically downloaded by the plugin, and processed using the dask Python library.
 
 There are a few important things to keep in mind when using CSV files with this plugin. Firstly, only dates within the same year can be processed, as the size of the CSV files is around 2GB. Furthermore, when QGIS is closed, all downloaded CSV files are deleted. These files are stored in the tmp folder inside the plugin directory, and a link to the folder is provided by the plugin. Lastly, if the CSV file for the selected year is already available, the CSV folder won't be downloaded.
 
