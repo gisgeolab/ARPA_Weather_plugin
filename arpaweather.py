@@ -978,9 +978,6 @@ class ARPAweather:
                         # Write message
                         self.iface.messageBar().pushMessage("Success", "Output file written at " + filename, level=Qgis.Success, duration=3)
                     except:
-                        bar.deleteLater()
-                        p_dialog.deleteLater()
-                        QApplication.processEvents()
                         raise Exception("Error while exporting the file.")
 
                 # EXPORT - Save time-series as csv
@@ -997,9 +994,6 @@ class ARPAweather:
                         # Write message
                         self.iface.messageBar().pushMessage("Success", "Output file written at " + filename_ts, level=Qgis.Success, duration=3)
                     except:
-                        bar.deleteLater()
-                        p_dialog.deleteLater()
-                        QApplication.processEvents()
                         raise Exception("Error while exporting time-series CSV file.")
             
                 # EXPORT - Save sensors information as csv
@@ -1015,19 +1009,15 @@ class ARPAweather:
                         # Write message
                         self.iface.messageBar().pushMessage("Success", "Output file written at " + filename_si, level=Qgis.Success, duration=3)
                     except:
-                        bar.deleteLater()
-                        p_dialog.deleteLater()
-                        QApplication.processEvents()
                         raise Exception("Error while exporting sensors information CSV file.")
 
 
                 #Updates the progress bar
                 bar.setValue(100)
-                bar.deleteLater()
-                p_dialog.deleteLater()
                 QApplication.processEvents()
             pass
-
+        bar.deleteLater()
+        p_dialog.deleteLater()
     QgsApplication.instance().aboutToQuit.connect(cleanup_csv_files)
 
 
