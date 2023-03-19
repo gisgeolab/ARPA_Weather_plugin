@@ -1,5 +1,6 @@
 # ARPA Weather Sensors Plugin
 
+<img src="icon.png" width="100"> <br>
 This repositories contains the complete plugin to process ARPA weather sensors time series. 
 
 ## Installation
