@@ -1016,8 +1016,8 @@ class ARPAweather:
                 bar.setValue(100)
                 QApplication.processEvents()
             pass
-        bar.deleteLater()
-        p_dialog.deleteLater()
+
+
     QgsApplication.instance().aboutToQuit.connect(cleanup_csv_files)
 
 
