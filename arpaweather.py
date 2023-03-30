@@ -218,7 +218,7 @@ class ARPAweather:
     def select_output_file(self):
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
-        filename, _filter = QFileDialog.getSaveFileName(self.dlg, "Save Layer As", "", "Shapefiles (*.shp);;Geopackages (*.gpkg);;CSV Files (*.csv)", options=options)
+        filename, _filter = QFileDialog.getSaveFileName(self.dlg, "Save Layer As", "", "Geopackages (*.gpkg);;Shapefiles (*.shp);;CSV Files (*.csv)", options=options)
         self.dlg.leOutputFileName.setText(filename)
     
     def select_output_file_ts(self):
@@ -282,7 +282,7 @@ class ARPAweather:
         sensors_df["storico"] = sensors_df["storico"].astype("category")
         sensors_df["datastart"] = pd.to_datetime(sensors_df["datastart"])
         sensors_df["datastop"] = pd.to_datetime(sensors_df["datastop"])
-        sensors_df = sensors_df.drop(columns=[":@computed_region_6hky_swhk", ":@computed_region_ttgh_9sm5"])
+        sensors_df = sensors_df.drop(columns=["cgb_est", "cgb_nord", "location", ":@computed_region_6hky_swhk", ":@computed_region_ttgh_9sm5"])
         
         
         if len(selected_provinces) == 0:
@@ -677,6 +677,7 @@ class ARPAweather:
 
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
+
         if self.first_start == True:
             self.first_start = False
             self.dlg = ARPAweatherDialog()
@@ -735,7 +736,8 @@ class ARPAweather:
             self.dlg.label_startAPIdate.setText(label_name_start)
             self.dlg.label_endAPIdate.setText(label_name_end)
 
-            self.dlg.label_CSVfirstyear.setText(list(switcher.keys())[-1])
+            self.dlg.label_CSVfirstyear.setText(datetime(int(list(switcher.keys())[-1]), 1, 1).strftime("%Y-%m-%d %H:%M:%S"))
+            self.dlg.label_CSVendyear.setText((start_date_API - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S"))
 
         except requests.exceptions.RequestException as e:
             # Raise an error message if there is an issue with the request
@@ -894,24 +896,22 @@ class ARPAweather:
                 layer = QgsVectorLayer("Point?crs=EPSG:4326", sensor_sel+' ({start} / {end})'.format(start=start_date, end=end_date), "memory")
 
                 if sensor_sel != "Direzione Vento":
-                    layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("mean", QVariant.Double), QgsField("max", QVariant.Double),
-                                                        QgsField("min", QVariant.Double), QgsField("std", QVariant.Double), QgsField("count", QVariant.Int),
+                    layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("media", QVariant.Double), QgsField("max", QVariant.Double),
+                                                        QgsField("min", QVariant.Double), QgsField("std", QVariant.Double), QgsField("conteggio", QVariant.Int),
                                                         QgsField("tipologia", QVariant.String),
                                                         QgsField("unit_dimisura", QVariant.String), QgsField("idstazione", QVariant.Int),
                                                         QgsField("nomestazione", QVariant.String), QgsField("quota", QVariant.Double),
                                                         QgsField("provincia", QVariant.String), QgsField("datastart", QVariant.String),
                                                         QgsField("storico", QVariant.String),
-                                                        QgsField("cgb_nord", QVariant.Int), QgsField("cgb_est", QVariant.Int),
                                                         QgsField("lng", QVariant.Double), QgsField("lat", QVariant.Double)])
                 
                 if sensor_sel == "Direzione Vento":
-                    layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("mode", QVariant.Double), QgsField("count", QVariant.Int),
+                    layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("moda", QVariant.Double), QgsField("conteggio", QVariant.Int),
                                                         QgsField("tipologia", QVariant.String),
                                                         QgsField("unit_dimisura", QVariant.String), QgsField("idstazione", QVariant.Int),
                                                         QgsField("nomestazione", QVariant.String), QgsField("quota", QVariant.Double),
                                                         QgsField("provincia", QVariant.String), QgsField("datastart", QVariant.String),
                                                         QgsField("storico", QVariant.String),
-                                                        QgsField("cgb_nord", QVariant.Int), QgsField("cgb_est", QVariant.Int),
                                                         QgsField("lng", QVariant.Double), QgsField("lat", QVariant.Double)])
 
                 # Update fields and start editing
@@ -930,8 +930,7 @@ class ARPAweather:
                                             QVariant(row['tipologia']), QVariant(row['unit_dimisura']),
                                             QVariant(row['idstazione']), QVariant(row['nomestazione']),
                                             QVariant(row['quota']), QVariant(row['provincia']), QVariant(row['datastart']), 
-                                            QVariant(row['storico']), QVariant(row['cgb_nord']),
-                                            QVariant(row['cgb_est']), QVariant(row['lng']), QVariant(row['lat'])])
+                                            QVariant(row['storico']), QVariant(row['lng']), QVariant(row['lat'])])
                         features.append(feature)
                 
                 if sensor_sel == "Direzione Vento":         # If wind direction sensor is selected
@@ -943,8 +942,7 @@ class ARPAweather:
                                             QVariant(row['tipologia']), QVariant(row['unit_dimisura']),
                                             QVariant(row['idstazione']), QVariant(row['nomestazione']),
                                             QVariant(row['quota']), QVariant(row['provincia']), QVariant(row['datastart']), 
-                                            QVariant(row['storico']), QVariant(row['cgb_nord']),
-                                            QVariant(row['cgb_est']), QVariant(row['lng']), QVariant(row['lat'])])
+                                            QVariant(row['storico']), QVariant(row['lng']), QVariant(row['lat'])])
                         features.append(feature)
 
                 # Add features and commit changes
@@ -961,15 +959,15 @@ class ARPAweather:
 
                 if filename != "":
                     try:
-                        if filename.endswith(".shp"):
-                            # Save as a shapefile
-                            options = QgsVectorFileWriter.SaveVectorOptions()
-                            options.driverName = 'ESRI Shapefile'
-                            QgsVectorFileWriter.writeAsVectorFormatV3(layer, filename, context, options)
-                        elif filename.endswith(".gpkg"):
+                        if filename.endswith(".gpkg"):
                             # Save as a geopackage
                             options = QgsVectorFileWriter.SaveVectorOptions()
                             options.driverName = 'GPKG'
+                            QgsVectorFileWriter.writeAsVectorFormatV3(layer, filename, context, options)
+                        elif filename.endswith(".shp"):
+                            # Save as a shapefile
+                            options = QgsVectorFileWriter.SaveVectorOptions()
+                            options.driverName = 'ESRI Shapefile'
                             QgsVectorFileWriter.writeAsVectorFormatV3(layer, filename, context, options)
                         elif filename.endswith(".csv"):
                             # Save as csv
@@ -1016,7 +1014,6 @@ class ARPAweather:
                 bar.setValue(100)
                 QApplication.processEvents()
             pass
-
 
     QgsApplication.instance().aboutToQuit.connect(cleanup_csv_files)
 
