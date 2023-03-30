@@ -18,6 +18,29 @@ dask is a flexible parallel computing library for Python. It allows you to proce
 ### Windows
 If you're using Windows, you can install these libraries using the `OSGeo4W Shell`. Here's how:
 
+If you are using **QGIS >= 3.20**:
+1. Open the `OSGeo4W Shell` as `Administrator`. If you already installed QGIS you can find `OSGeo4W Shell` in the Search bar. Type the following commands: 
+2. Check the environment:
+```
+o4w_env
+```
+3. Type the following command to upgrade pip (package installer):
+```
+>> python3 -m pip install --upgrade pip
+```
+4. Type the following command to install Sodapy:
+```
+>> python3 -m pip install sodapy -U --user
+```
+5. Type the following command to install pandas (raccomended **>=1.5.3** version):
+```
+>> python3 -m pip install pandas -U --user
+``` 
+6. Type the following command to install dask:
+```
+>> python3 -m pip install dask -U --user
+```
+
 If you are using **QGIS 3.18 or lower**:
 1. Open the `OSGeo4W Shell` as `Administrator`. If you already installed QGIS you can find `OSGeo4W Shell` in the Search bar. Type the following commands: 
 2. Check the environment:
@@ -39,25 +62,6 @@ py3_env
 6. Type the following command to install dask:
 ```
 >> python -m pip install dask
-```
-
-If you are using **QGIS >= 3.20**:
-1. Open the `OSGeo4W Shell` as `Administrator`. If you already installed QGIS you can find `OSGeo4W Shell` in the Search bar. Type the following commands: 
-2. Type the following command to upgrade pip (package installer):
-```
->> python3 -m pip install --upgrade pip
-```
-3. Type the following command to install Sodapy:
-```
->> python3 -m pip install sodapy -U --user
-```
-4. Type the following command to install pandas (raccomended **>=1.5.3** version):
-```
->> python3 -m pip install pandas -U --user
-``` 
-5. Type the following command to install dask:
-```
->> python3 -m pip install dask -U --user
 ```
 
 ### Linux
@@ -152,15 +156,18 @@ These statistics are calculated based on the selected time range and sensor type
 | `lat` | Latitude |
 
 
+### Exporting Time Series Data and Sensor Information
 List of exportable file:
 - Multipoint map layer containing the sensors information exportable in different formats: Geopackage (.gpkg), Shapefile ( .shp), CSV file (.csv);
 - Time-series in .csv format contanining dates and sensors id already ordered(according to selected parameters);
 - Sensors information for the selected provinces (sensors that are not functional anymore (Storico=S) are exported as well for completeness).
 
-### Exporting Time Series Data and Sensor Information
-You can export the time series data for the selected sensors in a CSV file, which can be used for further analysis or visualization in other tools. You can also export the selected sensors' information in a CSV file.
+## Examples
 
-## Use Cases??
+Add some examples here
+
+## Project LCZ-ODC
+Describe the program, why this plugin has been developed etc.
 
 ## Author
 
