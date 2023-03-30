@@ -135,21 +135,21 @@ These statistics are calculated based on the selected time range and sensor type
 
 | Column Name | Information description |
 | :---: | :---: |
-| idsensore | ID of the sensor |
-| media | average of the variable |
-| max | max of the variable |
-| min | min of the variable |
-| std | standard deviation of the variable |
-| conteggio | number of observations for statistics calculation |
-| tipologia | Type of sensor (e.g. temperature) |
-| unit_dimisura | Measure Unit (e.g. °C) |
-| idstazione | Station ID (multiple sensors can be available at the same station) |
-| nomestazione | Name of the Station |
-| quota | Height of the station (m) |
-| datastart | Start date of the time-series for that sensor |
-| storico | Indicates whether the sensor is historical or still working (S=historical, N=not historical) |
-| lng | Longitude |
-| lat | Latitude |
+| `idsensore` | ID of the sensor |
+| `media` / `moda` | average of the variable (or mode if Wind Direction) |
+| `max` | max of the variable |
+| `min` | min of the variable |
+| `std` | standard deviation of the variable |
+| `conteggio` | number of observations for statistics calculation |
+| `tipologia` | Type of sensor (e.g. temperature) |
+| `unit_dimisura` | Measure Unit (e.g. °C) |
+| `idstazione` | Station ID (multiple sensors can be available at the same station) |
+| `nomestazione` | Name of the Station |
+| `quota` | Height of the station (m) |
+| `datastart` | Start date of the time-series for that sensor |
+| `storico` | Indicates whether the sensor is historical or still working (S=historical, N=not historical) |
+| `lng` | Longitude |
+| `lat` | Latitude |
 
 
 List of exportable file:
