@@ -132,7 +132,7 @@ When processing weather sensor data using this plugin, you can obtain a range of
   
 These statistics are calculated based on the selected time range and sensor type.
 
-<div align="center">
+
 | Column Name | Information description |
 | :---: | :---: |
 | idsensore | ID of the sensor |
@@ -150,11 +150,11 @@ These statistics are calculated based on the selected time range and sensor type
 | storico | Indicates whether the sensor is historical or still working (S=historical, N=not historical) |
 | lng | Longitude |
 | lat | Latitude |
-</div>
+
 
 List of exportable file:
-- Map layer exportable in different formats: Geopackage (.gpkg), Shapefile ( .shp), CSV file (.csv);
-- Time-series according to selected parameters;
+- Multipoint map layer containing the sensors information exportable in different formats: Geopackage (.gpkg), Shapefile ( .shp), CSV file (.csv);
+- Time-series in .csv format contanining dates and sensors id already ordered(according to selected parameters);
 - Sensors information for the selected provinces (sensors that are not functional anymore (Storico=S) are exported as well for completeness).
 
 ### Exporting Time Series Data and Sensor Information
