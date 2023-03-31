@@ -99,44 +99,61 @@ To use the ARPA Weather Sensors Plugin, you can install it as a ZIP file. Here's
 2. Open QGIS and go to `Plugins` > `Manage and Install Plugins`...
 3. In the `Manage and Install Plugins` dialog box, click on the `Install from ZIP` tab
 4. Click the `...` button to browse to the location where you saved the plugin ZIP file, then click `Install Plugin`
-5. QGIS will install the plugin and ask if you want to enable it. Click `Yes` to enable the plugin
+5. QGIS will install the plugin and ask if you want to enable it. Click `Yes` to enable the plugin.
 
 Once you've installed and enabled the plugin, you can use it to process ARPA Lombardia weather data.
 
 ---
 
 ## Usage
-Once you have installed the ARPA Weather Sensors Plugin, you can use it to process ARPA Lombardia weather data. The plugin provides a user-friendly interface for selecting and processing weather sensor data.
-Open QGIS and search for the plugin in the Plugins toolbar.
+Once you have installed the ARPA Weather Sensors Plugin, you can use it to process ARPA Lombardia weather data.
+Open `QGIS` and search for the plugin in the `Plugins` toolbar.
 
 ### Choosing the Data Source
 
 ADD IMAGES AND DETAILS WHEN PLUGIN IS READY
 
-With this plugin, you have the flexibility to choose whether to retrieve data from the Socrata Open Data API for the current month or from yearly CSV files for older data. You can easily select your preferred data source at the beginning of the process, and the plugin will automatically request data from the API or CSV files based on the selected date range.
+With this plugin, you have the flexibility to choose whether to retrieve data from:
+- Socrata Open Data API for the current month data
+- CSV files for past month/years data
 
-It is important to note that using this plugin does not require an API token, but you may need one to access all datasets on Open Data Lombardia on Socrata API without any limitations (it has been left intentionally optional). Additionally, the CSV files are automatically downloaded by the plugin, and processed using the dask Python library.
+You can easily select your preferred data source at the beginning of the process, and the plugin will automatically request data from the API or CSV files based on the selected date range. The CSV files are automatically downloaded by the plugin, and processed using the dask Python library.
 
-There are a few important things to keep in mind when using CSV files with this plugin. Firstly, only dates within the same year can be processed, as the size of the CSV files is around 2GB. Furthermore, when QGIS is closed, all downloaded CSV files are deleted (to avoid to fill your PC memory). These files are stored in the tmp folder inside the plugin directory, and a link to the folder is provided by the plugin. Lastly, if the CSV file for the selected year is already available, the CSV folder won't be downloaded.
+**Notes** 
+- This plugin does not require an API token, but you may need one to access all datasets on Open Data Lombardia on Socrata API without any limitations (the use of the token has been left intentionally optional)
 
-It is worth noting that sensor information is obtainable from the API. The data is available in two different ways: current month data is available from the Socrata API, while previous months/years data is available from CSV files that must be downloaded first.
+- Only dates within the same year can be processed, as the size of the CSV files is around 2GB and processing multiple years together might be computationally difficult
+
+- When QGIS is closed, all downloaded CSV files are deleted (to avoid to fill your PC memory). These files are stored in the `tmp` folder inside the plugin directory, and a link to the folder is provided inside the plugin
+
+- If the CSV file for the selected year is already available inside the `tmp` folder, the corresponding CSV folder won't be downloaded
+
+- Sensor information (e.g. sensors id, stations id, location etc.) are obtained using the Socrata API.
 
 ### Selecting the Time Range and Sensor Type
-Once you have selected the data source, you can choose the time range for which you want to retrieve data, and the type of weather sensor you are interested in. You can also select a province to filter the data by location.
+Once you have selected the data source (API or CSV) you can choose:
+- time range for which you want to retrieve data (dates in the calendar are automatically limited to the correct time range based on the selected parameters)
+- weather sensor type you are interested in (e.g. temperature, precipitation etc.)
+- province to filter the data by location (if no provinces are selected all are selected by default)
 
 ### Removing Outliers
-You can choose to remove outliers from the data using one of three functions: None (if you don't want to remove any data), Interquantile Range (IQR) or Z-Score. Selecting one of these functions will help you to remove anomalous data points that may be affecting your analysis.
+You can choose to remove outliers from the data using one of three functions:
+- None (if you don't want to remove any data)
+- Interquantile Range (IQR)
+- Z-Score (default threshold set equal to 3)
 
-### Exporting Layer Map and Summary Statistics
-The plugin allows you to export a layer map of the selected weather sensor data, along with summary statistics calculated for the selected time range and sensor type.
-When processing weather sensor data using this plugin, you can obtain a range of relevant statistics and multipoint layers for different sensors. These include:
+Selecting one of these functions will help you to remove anomalous data points that may be affecting your analysis.
+
+### Exporting
+
+When processing weather sensor data using this plugin, you can obtain a range of relevant summary statistics and multipoint layers for different sensors. These include:
 
 - Mean, maximum, minimum, standard deviation, and count: for all variables, except for Wind Direction.
 - Mode and count, for Wind Direction, which is expressed in Degree North.
   
 These statistics are calculated based on the selected time range and sensor type.
 
-
+**Map layer attributes**
 | Column Name | Information description |
 | :---: | :---: |
 | `idsensore` | ID of the sensor |
@@ -155,9 +172,9 @@ These statistics are calculated based on the selected time range and sensor type
 | `lng` | Longitude |
 | `lat` | Latitude |
 
+The plugin generates a temporary layer named with sensor type and the time range used in the processing step, for example `Temperatura (2023-03-01 00:00:00 / 2023-03-31 05:50:00)`
 
-### Exporting Time Series Data and Sensor Information
-List of exportable file:
+The plugin allows to optionally export multiples files. The following is the list of exportable file:
 - Multipoint map layer containing the sensors information exportable in different formats: Geopackage (.gpkg), Shapefile ( .shp), CSV file (.csv);
 - Time-series in .csv format contanining dates and sensors id already ordered(according to selected parameters);
 - Sensors information for the selected provinces (sensors that are not functional anymore (Storico=S) are exported as well for completeness).
@@ -167,7 +184,9 @@ List of exportable file:
 Add some examples here
 
 ## Project LCZ-ODC
-Describe the program, why this plugin has been developed etc.
+The plugin is being developed within the LCZ-ODC project (agreement n. 2022-30-HH.0) funded by the Italian Space Agency (ASI) and Politecnico di Milano, which aims to identify Local Climate Zones within the Metropolitan City of Milan.
+
+Released under MIT license.
 
 ## Author
 

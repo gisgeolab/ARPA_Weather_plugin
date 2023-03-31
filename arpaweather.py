@@ -58,6 +58,7 @@ if not os.path.exists(tmp_dir):
 sensors_types = ["Altezza Neve", "Direzione Vento", "Livello Idrometrico", "Precipitazione", "Radiazione Globale", "Temperatura",
                  "Umidità Relativa", "Velocità Vento"]
 
+# Dictionary that maps the zip files to be downloaded from Open Data Lombardia for each year
 switcher = {
             '2023': "https://www.dati.lombardia.it/download/48xr-g9b9/application%2Fzip",
             '2022': "https://www.dati.lombardia.it/download/mvvc-nmzv/application%2Fzip",
@@ -216,18 +217,36 @@ class ARPAweather:
             self.iface.removeToolBarIcon(action)
 
     def select_output_file(self):
+        """
+        Opens a file dialog for the user to select an output file name and format. The selected file name is displayed in the output file name line edit.
+
+        Returns:
+        None
+        """
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
         filename, _filter = QFileDialog.getSaveFileName(self.dlg, "Save Layer As", "", "Geopackages (*.gpkg);;Shapefiles (*.shp);;CSV Files (*.csv)", options=options)
         self.dlg.leOutputFileName.setText(filename)
     
     def select_output_file_ts(self):
+        """
+        Opens a file dialog for the user to select an output file name and format ( for time series (ts)). The selected file name is displayed in the output file name line edit.
+
+        Returns:
+        None
+        """
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
         filename, _filter = QFileDialog.getSaveFileName(self.dlg, "Save Layer As", "", "CSV Files (*.csv)", options=options)
         self.dlg.leOutputFileName_ts.setText(filename)
 
     def select_output_file_si(self):
+        """
+        Opens a file dialog for the user to select an output file name and format ( for sensors information (si)). The selected file name is displayed in the output file name line edit.
+
+        Returns:
+        None
+        """
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
         filename, _filter = QFileDialog.getSaveFileName(self.dlg, "Save Layer As", "", "CSV Files (*.csv)", options=options)
@@ -282,12 +301,14 @@ class ARPAweather:
         sensors_df["storico"] = sensors_df["storico"].astype("category")
         sensors_df["datastart"] = pd.to_datetime(sensors_df["datastart"])
         sensors_df["datastop"] = pd.to_datetime(sensors_df["datastop"])
+
+        # Drop not relevant fields
         sensors_df = sensors_df.drop(columns=["cgb_est", "cgb_nord", "location", ":@computed_region_6hky_swhk", ":@computed_region_ttgh_9sm5"])
         
-        
+        # Filter the sensors data by selected provinces
         if len(selected_provinces) == 0:
+            # If no provinces are selected, use default list of provinces
             selected_provinces = ['BG', 'BS', 'CO', 'CR', 'LC', 'LO', 'MB', 'MI', 'MN', 'PV', 'SO', 'VA']
-            
         sensors_df = sensors_df[sensors_df['provincia'].isin(selected_provinces)]
 
         return sensors_df
@@ -370,7 +391,6 @@ class ARPAweather:
         df['idsensore'] = df['idsensore'].astype('int32')
         df['data'] = pd.to_datetime(df['data'])
 
-
         # Filter with selected sensors list
         try:
             df = df[df['value'] != -9999]
@@ -380,7 +400,7 @@ class ARPAweather:
 
         return df
 
-    def download_extract_csv_from_year(self, year, switcher):
+    def download_extract_csv_from_year(self, year, switcher, bar):
         """
         Downloads a zipped CSV file of meteorological data from ARPA sensors for a given year from the Open Data Lombardia website.
         If the file has already been downloaded, it will be skipped.
@@ -417,8 +437,12 @@ class ARPAweather:
                 for data in response.iter_content(block_size):
                     wrote = wrote + len(data)
                     f.write(data)
+                    try:
+                        bar.setValue((wrote / (block_size*block_size))/5)
+                    except Exception as e:
+                        print(f"Error: {e}")
+                        p_dialog.close()
                     #percentage = wrote / (block_size*block_size)
-                    #print("\rDownloaded: {:0.2f} MB".format(percentage), end="")
                 
             elapsed = time.time() - t
             print((f'\nDownloading {filename} -> Completed. Time required for download: {elapsed:0.2f} s.'))
@@ -530,30 +554,39 @@ class ARPAweather:
     def cleanup_csv_files():
         """
         Deletes all the CSV files present in the temporary folder (tmp).
+
+        Parameters:
+            None
+
+        Returns:
+            None
         """
+        # Set the path of the temporary folder where CSV files are stored
         folder_path = tmp_dir
+
+        # Loop through all files in the folder and delete CSV files
         for filename in os.listdir(folder_path):
             if filename.endswith(".csv"):
                 file_path = os.path.join(folder_path, filename)
                 try:
                     if os.path.isfile(file_path):
-                        os.unlink(file_path)
+                        os.unlink(file_path) # delete the file
                 except Exception as e:
-                    print("Error while deleting file:", e)
+                    print("Error while deleting file:", e) # print error message if file cannot be deleted
 
     def update_calendar(self, index):
         """
         Updates the minimum and maximum dates of the date-time edit widgets in the dialog based on the year selected
         in the combo box.
 
-        :param index: the index of the selected item in the combo box
+        :param index (int): the index of the selected item in the combo box
         """
         # Get the selected year from the combo box and the current date and last day of previous month
-
         today = datetime.today()
         first_day_of_month = datetime(today.year, today.month, 1)
         last_day_of_prev_month = first_day_of_month - timedelta(days=1)
 
+        # If the combo box is empty, set the selected year to the current year
         if self.dlg.cb_list_years.count() == 0:
             sel_year = int(today.year)
         else:
@@ -581,25 +614,19 @@ class ARPAweather:
 
         self.dlg.dtStartTime.setDateTime(csv_cal_start_date)
         self.dlg.dtEndTime.setDateTime(csv_cal_end_date)
-    
-    def progdialog(self,progress):
-        p_dialog = QProgressDialog('ARPA Weather Plugin processing...Please wait!', 'Cancel', 0, 100)
-        p_dialog.setWindowTitle("Progress")
-        p_dialog.setWindowModality(Qt.WindowModal)
-        bar = QProgressBar(p_dialog)
-        bar.setTextVisible(True)
-        bar.setValue(progress)
-        p_dialog.setBar(bar)
-        p_dialog.setMinimumWidth(300)
-        p_dialog.show()
-        return p_dialog, bar
         
     def update_CSV(self):
+            """
+            Updates the contents of the year combo box and the minimum and maximum dates of the date-time edit widgets in the dialog
+            based on the year selected in the combo box.
+            """
+            # Clear the year combo box and add the available years
             self.dlg.cb_list_years.clear()
             years_list = list(switcher.keys())
             self.dlg.cb_list_years.addItems(years_list)
-            sel_year = int(self.dlg.cb_list_years.currentText())
 
+            # Get the selected year from the combo box and the current date and last day of previous month
+            sel_year = int(self.dlg.cb_list_years.currentText())
             today = datetime.today()
             first_day_of_month = datetime(today.year, today.month, 1)
             last_day_of_prev_month = first_day_of_month - timedelta(days=1)
@@ -613,6 +640,7 @@ class ARPAweather:
                 csv_cal_start_date = datetime(sel_year, 1, 1, 0, 0, 0)
                 csv_cal_end_date = datetime(sel_year, 12, 31, 23, 59, 0)
 
+            # Set the display format, calendar popup, minimum date, maximum date, start date, and end date of the date-time edit widgets
             self.dlg.dtStartTime.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
             self.dlg.dtEndTime.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
             self.dlg.dtStartTime.setCalendarPopup(True)
@@ -628,44 +656,54 @@ class ARPAweather:
     
     def outlier_filter_iqr(self, df):
         """
-        Function for iltering using quantiles
+        Filters outliers from a given dataframe using the interquartile range (IQR) method.
         
-            Parameters:
-                df (dataframe): ARPA dataframe containing at least the following columns: "idsensore"(int), "data"(datetime) and "valore"(float)
-                sensors_list (int list): list of sensors
+        Parameters:
+            df (dataframe): ARPA dataframe containing at least the following columns: "idsensore"(int), "data"(datetime) and "valore"(float)
+            sensors_list (int list): list of sensors
 
-            Returns:
-                df(dataframe): filtered dataframe using IQR
+        Returns:
+            df(dataframe): filtered dataframe using IQR
         
         """
-
+        # Compute the first and third quartiles and the IQR
         Q1 = df['valore'].quantile(0.25)
         Q3 = df['valore'].quantile(0.75)
         IQR = Q3 - Q1
+
+        # Filter the DataFrame based on the IQR
         df = df[~((df['valore'] < (Q1 - 1.5 * IQR)) | (df['valore'] > (Q3 + 1.5 * IQR)))]
 
         return df
     
     def outlier_filter_zscore(self, df, threshold=3):
         """
-        Filter dataframe using Z-Score method
+        Filter dataframe using Z-Score method. The Z-Score method is used to filter out data points that are more than a specified number of standard deviations from the
+        mean of the dataset. The default threshold value is 3, which is a common choice in statistics.
 
-            Parameters:
-                df (pandas.DataFrame): ARPA dataframe with columns "idsensore" (int), "data" (datetime), and "valore" (float)
-                threshold (float, optional): Z-Score threshold to use for filtering, default is 3
+        Parameters:
+            df (pandas.DataFrame): ARPA dataframe with columns "idsensore" (int), "data" (datetime), and "valore" (float)
+            threshold (float, optional): Z-Score threshold to use for filtering, default is 3
 
-            Returns:
-                pandas.DataFrame: filtered dataframe using Z-Score method
+        Returns:
+            pandas.DataFrame: filtered dataframe using Z-Score method
             
         """
+        # Initialize an empty dataframe to store the filtered data
         filtered_df = pd.DataFrame(columns=['idsensore', 'data', 'valore'])
         
+        # Loop through each unique sensor in the dataframe
         for sensor in df['idsensore'].unique():
+            # Get the rows for the current sensor
             sensor_df = df[df['idsensore'] == sensor]
+            # Calculate the mean and standard deviation of the values for the current sensor
             mean = sensor_df['valore'].mean()
             std = sensor_df['valore'].std()
+            # Calculate the z-score for each value in the current sensor's dataframe
             z = (sensor_df['valore'] - mean) / std
+            # Filter out any rows where the absolute value of the z-score is greater than the threshold
             sensor_df = sensor_df[(z.abs() < threshold)]
+            # Concatenate the filtered sensor dataframe to the overall filtered dataframe
             filtered_df = pd.concat([filtered_df, sensor_df], ignore_index=True)
             
         return filtered_df
@@ -692,13 +730,11 @@ class ARPAweather:
         self.dlg.cbSensorsType.clear()
         self.dlg.cbSensorsType.addItems([str(sensor) for sensor in sensors_types])
         
-        self.dlg.leOutputFileName.clear()
-        
         self.dlg.cb_list_years.clear()
         self.dlg.cb_list_years.addItem(list(switcher.keys())[0])
         self.dlg.cb_list_years.currentIndexChanged.connect(self.update_calendar)
         
-        self.dlg.cbOutliersRemoval.clear()
+        # self.dlg.cbOutliersRemoval.clear()
         self.dlg.cbOutliersRemoval.addItems(['None', 'IQR', 'Z-Score'])
 
         self.dlg.leOutputFileName.clear()
@@ -711,7 +747,7 @@ class ARPAweather:
         
         # Folder contanining complete CSV
         labelHistCSV = self.dlg.labelHistoricalCSV
-        labelHistCSV.setText(f'<a href="{tmp_dir}">Complete CSV</a>')
+        labelHistCSV.setText(f'<a href="{tmp_dir}">Folder containing downloaded CSV</a>')
         
         # Create a function to handle the label click event
         def open_folder(event):
@@ -755,7 +791,7 @@ class ARPAweather:
         self.dlg.dtEndTime.setMaximumDateTime(end_date_API)
 
         # self.dlg.dtStartTime.setDateTime(start_date_API)
-        # self.dlg.dtEndTime.setDateTime(end_date_API)
+        self.dlg.dtEndTime.setDateTime(end_date_API)
         
         # Functin to update calendar with API dates after creating client connection
         def update_API():
@@ -798,10 +834,21 @@ class ARPAweather:
                     selected_provinces.append(checkbox.text())
             
             # Progress bar
-            p_dialog, bar = self.progdialog(0)
-            bar.setMaximum(100)
-            bar.setValue(0)
-            QApplication.processEvents()
+            try: 
+                p_dialog = QProgressDialog('ARPA Weather Plugin processing. This may take some time...', 'Cancel', 0, 100)
+                p_dialog.setWindowTitle("ARPA Weather Plugin")
+                p_dialog.setWindowModality(Qt.WindowModal)
+                bar = QProgressBar(p_dialog)
+                bar.setTextVisible(True)
+                bar.setMaximum(100)
+                bar.setValue(0)
+                p_dialog.setBar(bar)
+                p_dialog.setMinimumWidth(300)
+                p_dialog.show()
+                QApplication.processEvents()
+            except Exception as e:
+                print(f"Error: {e}")
+                p_dialog.close()
 
             # Get the start and the end date from the gui
             if self.dlg.rb1.isChecked():
@@ -844,16 +891,18 @@ class ARPAweather:
                     QMessageBox.warning(None, "Invalid Date Range", "Start date must be before end date")
                     return
 
-                # Updates the progress bar
-                bar.setValue(10)
-                QApplication.processEvents()
-
                 # Request time series
                 if start_date < start_date_API:
                     print("Requesting CSV. This will take a while.")
-                    sensors_values = self.download_extract_csv_from_year(str(year), switcher) #download the csv corresponding to the selected year
+                    sensors_values = self.download_extract_csv_from_year(str(year), switcher, bar) #download the csv corresponding to the selected year
                     csv_file = str(year)+'.csv'
-                    bar.setValue(50)
+
+                    try:
+                        bar.setValue(50)
+                    except Exception as e:
+                        print(f"Error: {e}")
+                        p_dialog.close()
+
                     sensors_values = self.process_ARPA_csv(csv_file, start_date, end_date, sensors_list) #process csv file with dask
                     if sensor_sel != "Direzione Vento":  # Don't check for outliers if wind direction
                         if outlier_method_sel == 'IQR':
@@ -864,7 +913,13 @@ class ARPAweather:
                 #If the chosen start date is equal or after the start date of API -> request data from API
                 elif (start_date >= start_date_API):  # If the end_date is greater than the end_date _API the latter will be used
                     print("Requesting from API")
-                    bar.setValue(50)
+
+                    try:
+                        bar.setValue(50)
+                    except Exception as e:
+                        print(f"Error: {e}")
+                        p_dialog.close()
+
                     sensors_values = self.req_ARPA_data_API(client, start_date, end_date, sensors_list) #request data from ARPA API
                     if sensor_sel != "Direzione Vento":  # Don't check for outliers if wind direction
                         if outlier_method_sel == 'IQR':
@@ -880,7 +935,11 @@ class ARPAweather:
                     sensor_test_agg = self.aggregate_group_data_wind_dir(sensors_values)
 
                 # Updates the progress bar
-                bar.setValue(70)
+                try:
+                    bar.setValue(90)
+                except Exception as e:
+                    print(f"Error: {e}")
+                    p_dialog.close()
                 QApplication.processEvents()
 
                 # Merge the values with the sensors info
@@ -1011,7 +1070,11 @@ class ARPAweather:
 
 
                 #Updates the progress bar
-                bar.setValue(100)
+                try:
+                    bar.setValue(100)
+                except Exception as e:
+                    print(f"Error: {e}")
+                    p_dialog.close()
                 QApplication.processEvents()
             pass
 
