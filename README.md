@@ -115,14 +115,14 @@ ADD IMAGES AND DETAILS WHEN PLUGIN IS READY
 
 With this plugin, you have the flexibility to choose whether to retrieve data from:
 - Socrata Open Data API for the current month data
-- CSV files for past month/years data
+- CSV files for past month/years data.
 
 You can easily select your preferred data source at the beginning of the process, and the plugin will automatically request data from the API or CSV files based on the selected date range. The CSV files are automatically downloaded by the plugin, and processed using the dask Python library.
 
 **Notes** 
-- This plugin does not require an API token, but you may need one to access all datasets on Open Data Lombardia on Socrata API without any limitations (the use of the token has been left intentionally optional)
+- This plugin does not require an API token, but it might be necessary in future to access all datasets on Open Data Lombardia on Socrata API without any limitations (the use of the token has been left intentionally optional for this reason)
 
-- Only dates within the same year can be processed, as the size of the CSV files is around 2GB and processing multiple years together might be computationally difficult
+- Only dates within the same year can be processed, as the size of the CSV files is around 2GB and processing multiple years together might be computationally intensive for common hardware
 
 - When QGIS is closed, all downloaded CSV files are deleted (to avoid to fill your PC memory). These files are stored in the `tmp` folder inside the plugin directory, and a link to the folder is provided inside the plugin
 
@@ -172,12 +172,12 @@ These statistics are calculated based on the selected time range and sensor type
 | `lng` | Longitude |
 | `lat` | Latitude |
 
-The plugin generates a temporary layer named with sensor type and the time range used in the processing step, for example `Temperatura (2023-03-01 00:00:00 / 2023-03-31 05:50:00)`
+The plugin generates a temporary layer named with sensor type and the time range used in the processing step, for example `Temperatura (2023-03-01 00:00:00 / 2023-03-31 05:50:00)`.
 
-The plugin allows to optionally export multiples files. The following is the list of exportable file:
+The plugin allows to optionally export multiples additional files. The following is the list of exportable file:
 - Multipoint map layer containing the sensors information exportable in different formats: Geopackage (.gpkg), Shapefile ( .shp), CSV file (.csv);
-- Time-series in .csv format contanining dates and sensors id already ordered(according to selected parameters);
-- Sensors information for the selected provinces (sensors that are not functional anymore (Storico=S) are exported as well for completeness).
+- Time-series (in .csv format) containing observations for the selected sensors in the time-range selected. the file contains dates and sensors id already ordered by increasing sensor number and date;
+- Sensors information (e.g. sensor id, station id, location etc.) inside the selected provinces, provided in .csv format. Sensors that are not functional anymore (Storico=S) are exported as well for completeness.
 
 ## Examples
 
