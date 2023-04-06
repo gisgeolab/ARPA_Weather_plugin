@@ -23,10 +23,9 @@
 """
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QVariant, Qt, QUrl
 from qgis.PyQt.QtGui import QIcon, QDesktopServices
-from qgis.PyQt.QtWidgets import QAction, QMessageBox, QFileDialog, QProgressBar, QProgressDialog, QApplication, QLabel
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QFileDialog, QProgressBar, QProgressDialog, QApplication
 from qgis.core import QgsProject, QgsVectorLayer, QgsField, QgsGeometry, QgsPointXY, QgsFeature, Qgis, QgsVectorFileWriter, QgsApplication
 from qgis.utils import iface
-from PyQt5.QtCore import QTextCodec
 
 # Import libraries
 from sodapy import Socrata
@@ -734,7 +733,7 @@ class ARPAweather:
         self.dlg.cb_list_years.addItem(list(switcher.keys())[0])
         self.dlg.cb_list_years.currentIndexChanged.connect(self.update_calendar)
         
-        # self.dlg.cbOutliersRemoval.clear()
+        self.dlg.cbOutliersRemoval.clear()
         self.dlg.cbOutliersRemoval.addItems(['None', 'IQR', 'Z-Score'])
 
         self.dlg.leOutputFileName.clear()
@@ -955,8 +954,10 @@ class ARPAweather:
                 layer = QgsVectorLayer("Point?crs=EPSG:4326", sensor_sel+' ({start} / {end})'.format(start=start_date, end=end_date), "memory")
 
                 if sensor_sel != "Direzione Vento":
-                    layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("media", QVariant.Double), QgsField("max", QVariant.Double),
-                                                        QgsField("min", QVariant.Double), QgsField("std", QVariant.Double), QgsField("conteggio", QVariant.Int),
+                    merged_df.round({'media': 1, 'max': 1, 'min': 1, 'std': 1})
+                    
+                    layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("media", QVariant.Double, 'double', 10, 1), QgsField("max", QVariant.Double, 'double', 10, 1),
+                                                        QgsField("min", QVariant.Double, 'double', 10, 1), QgsField("std", QVariant.Double, 'double', 10, 1), QgsField("conteggio", QVariant.Int),
                                                         QgsField("tipologia", QVariant.String),
                                                         QgsField("unit_dimisura", QVariant.String), QgsField("idstazione", QVariant.Int),
                                                         QgsField("nomestazione", QVariant.String), QgsField("quota", QVariant.Double),
@@ -965,7 +966,9 @@ class ARPAweather:
                                                         QgsField("lng", QVariant.Double), QgsField("lat", QVariant.Double)])
                 
                 if sensor_sel == "Direzione Vento":
-                    layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("moda", QVariant.Double), QgsField("conteggio", QVariant.Int),
+                    merged_df.round({'moda': 0})
+                    
+                    layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("moda", QVariant.Double,'double', 10, 0), QgsField("conteggio", QVariant.Int),
                                                         QgsField("tipologia", QVariant.String),
                                                         QgsField("unit_dimisura", QVariant.String), QgsField("idstazione", QVariant.Int),
                                                         QgsField("nomestazione", QVariant.String), QgsField("quota", QVariant.Double),
@@ -997,7 +1000,7 @@ class ARPAweather:
                         point = QgsPointXY(row['lng'], row['lat'])
                         feature = QgsFeature()
                         feature.setGeometry(QgsGeometry.fromPointXY(point))
-                        feature.setAttributes([QVariant(row['idsensore']), QVariant(row['mode']), QVariant(row['count']),
+                        feature.setAttributes([QVariant(row['idsensore']), QVariant(round(row['mode'])), QVariant(row['count']),
                                             QVariant(row['tipologia']), QVariant(row['unit_dimisura']),
                                             QVariant(row['idstazione']), QVariant(row['nomestazione']),
                                             QVariant(row['quota']), QVariant(row['provincia']), QVariant(row['datastart']), 
@@ -1079,22 +1082,3 @@ class ARPAweather:
             pass
 
     QgsApplication.instance().aboutToQuit.connect(cleanup_csv_files)
-
-
-
-# ---------OLD FUNCTIONS-----------
-    # def toggle_group_box(self):
-    #     """
-    #     Toggles the visibility of the group boxes based on which radio button is selected.
-
-    #     If the first radio button is checked, the first group box is enabled and the second group box is disabled.
-    #     If the second radio button is checked, the first group box is disabled and the second group box is enabled.
-    #     """
-    #     if self.dlg.rb1.isChecked():
-    #         # If the first radio button is checked, enable the first group box and disable the second group box
-    #         self.dlg.gb1.setEnabled(True)
-    #         self.dlg.gb2.setEnabled(False)
-    #     else:
-    #         # If the second radio button is checked, disable the first group box and enable the second group box
-    #         self.dlg.gb1.setEnabled(False)
-    #         self.dlg.gb2.setEnabled(True)
