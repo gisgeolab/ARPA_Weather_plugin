@@ -391,10 +391,7 @@ class ARPAweather:
         df['data'] = pd.to_datetime(df['data'])
 
         # Filter with selected sensors list
-        try:
-            df = df[df['value'] != -9999]
-        except:
-            df = df[df['valore'] != -9999]
+        df = df[df['valore'] != -9999]
         df = df[df['idsensore'].isin(sensors_list)]
 
         return df
