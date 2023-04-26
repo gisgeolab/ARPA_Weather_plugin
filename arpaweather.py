@@ -391,10 +391,7 @@ class ARPAweather:
         df['data'] = pd.to_datetime(df['data'])
 
         # Filter with selected sensors list
-        try:
-            df = df[df['value'] != -9999]
-        except:
-            df = df[df['valore'] != -9999]
+        df = df[df['valore'] != -9999]
         df = df[df['idsensore'].isin(sensors_list)]
 
         return df
@@ -897,7 +894,7 @@ class ARPAweather:
                     csv_file = str(year)+'.csv'
 
                     try:
-                        bar.setValue(50)
+                        bar.setValue(70)
                     except Exception as e:
                         print(f"Error: {e}")
                         p_dialog.close()
@@ -914,7 +911,7 @@ class ARPAweather:
                     print("Requesting from API")
 
                     try:
-                        bar.setValue(50)
+                        bar.setValue(70)
                     except Exception as e:
                         print(f"Error: {e}")
                         p_dialog.close()

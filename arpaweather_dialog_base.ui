@@ -155,7 +155,7 @@
             <widget class="QLabel" name="label_startAPIdate_2">
              <property name="minimumSize">
               <size>
-               <width>10</width>
+               <width>15</width>
                <height>0</height>
               </size>
              </property>
@@ -919,7 +919,7 @@
       <widget class="QLabel" name="labelHistoricalCSV">
        <property name="minimumSize">
         <size>
-         <width>160</width>
+         <width>200</width>
          <height>0</height>
         </size>
        </property>
@@ -930,7 +930,7 @@
         </size>
        </property>
        <property name="text">
-        <string>Folder with complete CSV</string>
+        <string>Folder </string>
        </property>
       </widget>
      </item>
