@@ -224,7 +224,7 @@ class ARPAweather:
         """
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
-        filename, _filter = QFileDialog.getSaveFileName(self.dlg, "Save Layer As", "", "Geopackages (*.gpkg);;Shapefiles (*.shp);;CSV Files (*.csv)", options=options)
+        filename, _filter = QFileDialog.getSaveFileName(self.dlg, "Save Layer As", "", "CSV Files (*.csv)", options=options)
         self.dlg.leOutputFileName.setText(filename)
     
     def select_output_file_ts(self):
@@ -435,6 +435,7 @@ class ARPAweather:
                     f.write(data)
                     try:
                         bar.setValue((wrote / (block_size*block_size))/5)
+                        QApplication.processEvents()
                     except Exception as e:
                         print(f"Error: {e}")
                         p_dialog.close()
@@ -703,6 +704,20 @@ class ARPAweather:
             filtered_df = pd.concat([filtered_df, sensor_df], ignore_index=True)
             
         return filtered_df
+    
+    # To set the progress bar
+    def progdialog(self,progress):
+        p_dialog = QProgressDialog('ARPA Weather Plugin processing. This may take some time...', 'Cancel', 0, 100)
+        p_dialog.setWindowTitle("Progress ARPA Weather Plugin")
+        p_dialog.setWindowModality(Qt.WindowModal)
+        bar = QProgressBar(p_dialog)
+        bar.setTextVisible(True)
+        bar.setMaximum(100)
+        bar.setValue(0)
+        p_dialog.setBar(bar)
+        p_dialog.setMinimumWidth(300)
+        p_dialog.show()
+        return p_dialog, bar
 
 # --- RUN ------------
 
@@ -822,29 +837,16 @@ class ARPAweather:
 
         if result:
             
+            p_dialog, bar = self.progdialog(0)
+            bar.setMaximum(100)
+            bar.setValue(0)
+            QApplication.processEvents()
             # Select provinces and create list of selected provinces
             selected_provinces = []
             for checkbox in [self.dlg.cb_BG,self.dlg.cb_BS,self.dlg.cb_CO, self.dlg.cb_CR,self.dlg.cb_LC,self.dlg.cb_LO,self.dlg.cb_MB,
                             self.dlg.cb_MI,self.dlg.cb_MN,self.dlg.cb_PV,self.dlg.cb_SO,self.dlg.cb_VA]:
                 if checkbox.isChecked():
                     selected_provinces.append(checkbox.text())
-            
-            # Progress bar
-            try: 
-                p_dialog = QProgressDialog('ARPA Weather Plugin processing. This may take some time...', 'Cancel', 0, 100)
-                p_dialog.setWindowTitle("ARPA Weather Plugin")
-                p_dialog.setWindowModality(Qt.WindowModal)
-                bar = QProgressBar(p_dialog)
-                bar.setTextVisible(True)
-                bar.setMaximum(100)
-                bar.setValue(0)
-                p_dialog.setBar(bar)
-                p_dialog.setMinimumWidth(300)
-                p_dialog.show()
-                QApplication.processEvents()
-            except Exception as e:
-                print(f"Error: {e}")
-                p_dialog.close()
 
             # Get the start and the end date from the gui
             if self.dlg.rb1.isChecked():
@@ -893,11 +895,9 @@ class ARPAweather:
                     sensors_values = self.download_extract_csv_from_year(str(year), switcher, bar) #download the csv corresponding to the selected year
                     csv_file = str(year)+'.csv'
 
-                    try:
-                        bar.setValue(70)
-                    except Exception as e:
-                        print(f"Error: {e}")
-                        p_dialog.close()
+                    # Updates the progress bar
+                    bar.setValue(70)
+                    QApplication.processEvents()
 
                     sensors_values = self.process_ARPA_csv(csv_file, start_date, end_date, sensors_list) #process csv file with dask
                     if sensor_sel != "Direzione Vento":  # Don't check for outliers if wind direction
@@ -910,11 +910,9 @@ class ARPAweather:
                 elif (start_date >= start_date_API):  # If the end_date is greater than the end_date _API the latter will be used
                     print("Requesting from API")
 
-                    try:
-                        bar.setValue(70)
-                    except Exception as e:
-                        print(f"Error: {e}")
-                        p_dialog.close()
+                    # Updates the progress bar
+                    bar.setValue(10)
+                    QApplication.processEvents()
 
                     sensors_values = self.req_ARPA_data_API(client, start_date, end_date, sensors_list) #request data from ARPA API
                     if sensor_sel != "Direzione Vento":  # Don't check for outliers if wind direction
@@ -931,12 +929,8 @@ class ARPAweather:
                     sensor_test_agg = self.aggregate_group_data_wind_dir(sensors_values)
 
                 # Updates the progress bar
-                try:
                     bar.setValue(90)
-                except Exception as e:
-                    print(f"Error: {e}")
-                    p_dialog.close()
-                QApplication.processEvents()
+                    QApplication.processEvents()
 
                 # Merge the values with the sensors info
                 merged_df = pd.merge(sensor_test_agg, sensors_df, on='idsensore')
@@ -1012,25 +1006,13 @@ class ARPAweather:
                 QgsProject.instance().addMapLayer(layer)
                 layer.updateExtents()
 
-                # EXPORT - Save file as shp/gpkg/csv
+                # EXPORT - Save file as csv
                 filename = self.dlg.leOutputFileName.text()
                 context = QgsProject.instance().transformContext()
 
                 if filename != "":
                     try:
-                        if filename.endswith(".gpkg"):
-                            # Save as a geopackage
-                            options = QgsVectorFileWriter.SaveVectorOptions()
-                            options.driverName = 'GPKG'
-                            QgsVectorFileWriter.writeAsVectorFormatV3(layer, filename, context, options)
-                        elif filename.endswith(".shp"):
-                            # Save as a shapefile
-                            options = QgsVectorFileWriter.SaveVectorOptions()
-                            options.driverName = 'ESRI Shapefile'
-                            QgsVectorFileWriter.writeAsVectorFormatV3(layer, filename, context, options)
-                        elif filename.endswith(".csv"):
-                            # Save as csv
-                            merged_df.to_csv(filename, index=False,  encoding="utf-8-sig")
+                        merged_df.to_csv(filename, index=False,  encoding="utf-8-sig")
                         
                         # Write message
                         self.iface.messageBar().pushMessage("Success", "Output file written at " + filename, level=Qgis.Success, duration=3)
@@ -1042,11 +1024,10 @@ class ARPAweather:
 
                 if filename_ts != "":
                     try: 
-                        if filename_ts.endswith(".csv"):
-                            # Save as csv
-                            sensors_values_csv = sensors_values.reset_index(drop=True)
-                            sensors_values_csv = sensors_values_csv.sort_values(['idsensore', 'data'], ascending=[True, True])
-                            sensors_values_csv.to_csv(filename_ts, index=False, encoding="utf-8-sig")
+                        # Save as csv
+                        sensors_values_csv = sensors_values.reset_index(drop=True)
+                        sensors_values_csv = sensors_values_csv.sort_values(['idsensore', 'data'], ascending=[True, True])
+                        sensors_values_csv.to_csv(filename_ts, index=False, encoding="utf-8-sig")
                         
                         # Write message
                         self.iface.messageBar().pushMessage("Success", "Output file written at " + filename_ts, level=Qgis.Success, duration=3)
@@ -1058,10 +1039,9 @@ class ARPAweather:
 
                 if filename_si != "":
                     try:
-                        if filename_si.endswith(".csv"):
-                            # Save as csv
-                            sensors_df_csv = sensors_df.loc[sensors_df['tipologia'] == sensor_sel]
-                            sensors_df_csv.to_csv(filename_si, index=False, encoding="utf-8-sig")
+                        # Save as csv
+                        sensors_df_csv = sensors_df.loc[sensors_df['tipologia'] == sensor_sel]
+                        sensors_df_csv.to_csv(filename_si, index=False, encoding="utf-8-sig")
                         
                         # Write message
                         self.iface.messageBar().pushMessage("Success", "Output file written at " + filename_si, level=Qgis.Success, duration=3)
@@ -1069,12 +1049,8 @@ class ARPAweather:
                         raise Exception("Error while exporting sensors information CSV file.")
 
 
-                #Updates the progress bar
-                try:
-                    bar.setValue(100)
-                except Exception as e:
-                    print(f"Error: {e}")
-                    p_dialog.close()
+            # Updates the progress bar
+                bar.setValue(10)
                 QApplication.processEvents()
             pass
 

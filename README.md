@@ -77,15 +77,15 @@ Install pip (if you don't already have it) using the Terminal:
 ```
 3. Type the following command to install Sodapy:
 ```
->> pip install sodapy
+>> pip.main(['install', 'sodapy'])
 ```
 4. Type the following command to install pandas:
 ```
->> pip install dask
+>> pip.main(['install', 'pandas'])
 ```
 5. Type the following command to install dask:
 ```
->> pip install pandas
+>> pip.main(['install', 'dask'])
 ```
 
 ---
