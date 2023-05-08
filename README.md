@@ -90,6 +90,10 @@ Install pip (if you don't already have it) using the Terminal:
 
 ---
 
+NOTE: It may be required to restart QGIS after installing all the packages!
+
+---
+
 Now you can pen QGIS and do the following step: 
 Go to `Plugins` -> `Manage and Install plugins` -> `Settings` -> `Show also experimental plugins`
 

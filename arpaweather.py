@@ -426,7 +426,7 @@ class ARPAweather:
             response = requests.get(url, stream=True)
             
             block_size = 1024
-            wrote = 0 
+            wrote = 0.0 
             
             # Writing the file to the local file system
             with open(os.path.join(tmp_dir, filename), "wb") as f:
@@ -434,11 +434,10 @@ class ARPAweather:
                     wrote = wrote + len(data)
                     f.write(data)
                     try:
-                        bar.setValue((wrote / (block_size*block_size))/5)
+                        bar.setValue(int((wrote / (block_size*block_size))/5))
                         QApplication.processEvents()
                     except Exception as e:
                         print(f"Error: {e}")
-                        p_dialog.close()
                     #percentage = wrote / (block_size*block_size)
                 
             elapsed = time.time() - t
