@@ -90,9 +90,10 @@ Install pip (if you don't already have it) using the Terminal:
 
 ---
 
-NOTE: It may be required to restart QGIS after installing all the packages!
+NOTE: It may be required to restart QGIS after installing all the packages.
 
 ---
+
 
 Now you can pen QGIS and do the following step: 
 Go to `Plugins` -> `Manage and Install plugins` -> `Settings` -> `Show also experimental plugins`
@@ -104,6 +105,8 @@ To use the ARPA Weather Sensors Plugin, you can install it as a ZIP file. Here's
 3. In the `Manage and Install Plugins` dialog box, click on the `Install from ZIP` tab
 4. Click the `...` button to browse to the location where you saved the plugin ZIP file, then click `Install Plugin`
 5. QGIS will install the plugin and ask if you want to enable it. Click `Yes` to enable the plugin.
+
+Be sure to have the ARPA Weather Plugin enabled in your installed plugins.
 
 Once you've installed and enabled the plugin, you can use it to process ARPA Lombardia weather data.
 
@@ -161,11 +164,11 @@ These statistics are calculated based on the selected time range and sensor type
 | Column Name | Information description |
 | :---: | :---: |
 | `idsensore` | ID of the sensor |
-| `media` / `moda` | average of the variable (or mode if Wind Direction) |
-| `max` | max of the variable |
-| `min` | min of the variable |
-| `std` | standard deviation of the variable |
-| `conteggio` | number of observations for statistics calculation |
+| `media` / `moda` | Average of the variable (or mode is used if Wind Direction is requested) |
+| `max` | Max of the variable |
+| `min` | Min of the variable |
+| `std` | Standard deviation of the variable |
+| `conteggio` | Number of observations for statistics calculation |
 | `tipologia` | Type of sensor (e.g. temperature) |
 | `unit_dimisura` | Measure Unit (e.g. °C) |
 | `idstazione` | Station ID (multiple sensors can be available at the same station) |
@@ -179,9 +182,9 @@ These statistics are calculated based on the selected time range and sensor type
 The plugin generates a temporary layer named with sensor type and the time range used in the processing step, for example `Temperatura (2023-03-01 00:00:00 / 2023-03-31 05:50:00)`.
 
 The plugin allows to optionally export multiples additional files. The following is the list of exportable file:
-- Multipoint map layer containing the sensors information exportable in different formats: Geopackage (.gpkg), Shapefile ( .shp), CSV file (.csv);
-- Time-series (in .csv format) containing observations for the selected sensors in the time-range selected. the file contains dates and sensors id already ordered by increasing sensor number and date;
-- Sensors information (e.g. sensor id, station id, location etc.) inside the selected provinces, provided in .csv format. Sensors that are not functional anymore (Storico=S) are exported as well for completeness.
+- Attribute table (exportable in .csv format) containing sensors information;
+- Time-series (exportable in .csv format) containing observations for the selected sensors in the time-range selected. the file contains dates and sensors id already ordered by increasing sensor number and date;
+- Sensors information (e.g. sensor id, station id, location etc.) inside the selected provinces, (exportable in .csv format). Sensors that are not functional anymore (Storico=S) are exported as well for completeness.
 
 ## Examples
 
@@ -192,7 +195,6 @@ The plugin is being developed within the LCZ-ODC project (agreement n. 2022-30-H
 
 Released under MIT license.
 
-## Author
+### Author
 
-Emanuele Capizzi
-Email: emanuele.capizzi@polimi.it
+Emanuele Capizzi - E-mail: emanuele.capizzi@polimi.it
