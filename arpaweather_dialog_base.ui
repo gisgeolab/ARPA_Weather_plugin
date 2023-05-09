@@ -684,7 +684,7 @@
        <item>
         <widget class="QLabel" name="label_6">
          <property name="text">
-          <string>Export map [optional]:</string>
+          <string>Export attribute table [optional]:</string>
          </property>
         </widget>
        </item>
