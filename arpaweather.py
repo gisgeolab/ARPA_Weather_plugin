@@ -229,7 +229,7 @@ class ARPAweather:
     
     def select_output_file_ts(self):
         """
-        Opens a file dialog for the user to select an output file name and format ( for time series (ts)). The selected file name is displayed in the output file name line edit.
+        Opens a file dialog for the user to select an output file name and format (for time series (ts)). The selected file name is displayed in the output file name line edit.
 
         Returns:
         None
@@ -241,7 +241,7 @@ class ARPAweather:
 
     def select_output_file_si(self):
         """
-        Opens a file dialog for the user to select an output file name and format ( for sensors information (si)). The selected file name is displayed in the output file name line edit.
+        Opens a file dialog for the user to select an output file name and format (for sensors information (si)). The selected file name is displayed in the output file name line edit.
 
         Returns:
         None
@@ -250,6 +250,18 @@ class ARPAweather:
         options |= QFileDialog.ReadOnly
         filename, _filter = QFileDialog.getSaveFileName(self.dlg, "Save Layer As", "", "CSV Files (*.csv)", options=options)
         self.dlg.leOutputFileName_si.setText(filename)
+
+    def select_output_file_si_merged(self):
+        """
+        Opens a file dialog for the user to select an output file name and format (for time series merged with sensors information (si_merged)). The selected file name is displayed in the output file name line edit.
+
+        Returns:
+        None
+        """
+        options = QFileDialog.Options()
+        options |= QFileDialog.ReadOnly
+        filename, _filter = QFileDialog.getSaveFileName(self.dlg, "Save Layer As", "", "CSV Files (*.csv)", options=options)
+        self.dlg.leOutputFileName_si_merged.setText(filename)
 
     def connect_ARPA_api(self, token=""):
         """
@@ -732,6 +744,7 @@ class ARPAweather:
             self.dlg.pbOutputSave.clicked.connect(self.select_output_file)
             self.dlg.pbOutputSave_ts.clicked.connect(self.select_output_file_ts)
             self.dlg.pbOutputSave_si.clicked.connect(self.select_output_file_si)
+            self.dlg.pbOutputSave_si_merged.clicked.connect(self.select_output_file_si_merged)
         
         # Group box toggled
         self.dlg.rb1.setChecked(True) # Radio button 1 (API) checked at the beginning
@@ -750,6 +763,7 @@ class ARPAweather:
         self.dlg.leOutputFileName.clear()
         self.dlg.leOutputFileName_ts.clear()
         self.dlg.leOutputFileName_si.clear()
+        self.dlg.leOutputFileName_si_merged.clear()
 
         # Add documentation link
         self.dlg.labelLinkDoc.setText('<a href="https://github.com/capizziemanuele/ARPA_Weather_plugin">GitHub Doc</a>')
@@ -1046,6 +1060,24 @@ class ARPAweather:
                         self.iface.messageBar().pushMessage("Success", "Output file written at " + filename_si, level=Qgis.Success, duration=3)
                     except:
                         raise Exception("Error while exporting sensors information CSV file.")
+                    
+                # EXPORT - Save time series and sensors information merged as csv
+                filename_si_merged = self.dlg.leOutputFileName_si_merged.text()
+
+                if filename_si_merged != "":
+                    try:
+                        # Save as csv
+                        sensors_values_csv = sensors_values.reset_index(drop=True)
+                        sensors_values_csv = sensors_values_csv.sort_values(['idsensore', 'data'], ascending=[True, True])
+                        sensors_df_csv = sensors_df.loc[sensors_df['tipologia'] == sensor_sel]
+
+                        sensors_df_merged_csv = pd.merge(sensors_values_csv, sensors_df_csv, how='left', on='idsensore')
+                        sensors_df_merged_csv.to_csv(filename_si_merged, index=False, encoding="utf-8-sig")
+                        
+                        # Write message
+                        self.iface.messageBar().pushMessage("Success", "Output file written at " + filename_si_merged, level=Qgis.Success, duration=3)
+                    except:
+                        raise Exception("Error while exporting time series with sensors information CSV file.")
 
 
             # Updates the progress bar
