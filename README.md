@@ -1,4 +1,4 @@
-# ARPA Weather Sensors QGIS Plugin
+# ARPA Weather - QGIS Plugin
 <p align="center">
   <img src="icon.png" width="120"> <br>
 </p>
