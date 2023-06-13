@@ -177,6 +177,18 @@ Once you have selected the data source (API or CSV) you can choose:
 
 - time range for which you want to retrieve data (dates in the calendar are automatically limited to the correct time range based on the selected parameters)
 - weather sensor type you are interested in (e.g. temperature, precipitation etc.)
+
+| Sensor Type | Sensor name | Unit |
+| :------------------: | :-------------------------: | :-------------------------: |
+| `Snow Depth` | Altezza Neve | cm |
+| `Wind Direction` | Direzione Vento | Degree North |
+| `Water Level` | Livello Idrometrico | cm |
+| `Rainfall` | Precipitazione | mm |
+| `Global Radiation` | Radiazione Globale | W/m<sup>2</sup> |
+| `Temperature` | Temperatura | <sup>°</sup>C |
+| `Relative Humidity` | Umidità Relativa | % |
+| `Wind Speed` | Velocità Vento | m/s |
+
 - province to filter the data by location (if no provinces are selected all are selected by default)
 
 ### Removing Outliers
