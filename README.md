@@ -7,13 +7,13 @@ The ARPA Weather Sensors Plugin is a QGIS plugin designed to help users process 
 
 To use the ARPA Weather Sensors Plugin, you'll need to install a few libraries first. Specifically, you'll need to install [Sodapy](https://github.com/xmunoz/sodapy), [pandas](https://pandas.pydata.org/docs/index.html), and [dask](https://www.dask.org/).
 
-`<b>`Sodapy`</b><br>`
+<b>Sodapy</b>
 Sodapy is a Python library that provides a simple interface for accessing data from the Socrata Open Data API. In the context of the ARPA Weather Sensors Plugin, Sodapy is used to retrieve data from the ARPA Lombardia weather sensors.
 
-`<b>`pandas`</b><br>`
+<b>pandas</b>
 pandas is a powerful data analysis library for Python. It provides data structures for efficiently storing and manipulating large datasets, as well as tools for working with missing data, time series data, and more. In the context of the ARPA Weather Sensors Plugin, pandas is used to process and analyze the weather sensor data.
 
-`<b>`dask`</b><br>`
+<b>dask</b>
 dask is a flexible parallel computing library for Python. It allows you to process large datasets in parallel, using a variety of distributed computing strategies. In the context of the ARPA Weather Sensors Plugin, dask is used to speed up the processing of large weather sensor CSV datasets.
 
 ### Windows
@@ -144,6 +144,7 @@ Once you've installed and enabled the plugin, you can use it to process ARPA Lom
 ---
 ## Plugin Structure
 The following image summarize the plugin functionalities:
+<br>
 ![Plugin Structure](plugin_structure.png)
 
 
