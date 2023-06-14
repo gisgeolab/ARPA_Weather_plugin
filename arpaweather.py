@@ -771,7 +771,7 @@ class ARPAweather:
         
         # Folder contanining complete CSV
         labelHistCSV = self.dlg.labelHistoricalCSV
-        labelHistCSV.setText(f'<a href="{tmp_dir}">Folder containing downloaded CSV</a>')
+        labelHistCSV.setText(f'<a href="{tmp_dir}">Downloaded CSV</a>')
         
         # Create a function to handle the label click event
         def open_folder(event):
