@@ -182,7 +182,8 @@ You can easily select your preferred data source at the beginning of the process
 Once you have selected the data source (API or CSV) you can choose:
 
 - time range for which you want to retrieve data (dates in the calendar are automatically limited to the correct time range based on the selected parameters)
-- weather sensor type you are interested in (e.g. temperature, precipitation etc.)
+- province to filter the data by location (if no provinces are selected all are selected by default)
+- weather sensor type you are interested in (e.g. temperature, precipitation etc.). The following table describes the available sensors names:
 
 | Sensor Type | Sensor name | Unit |
 | :------------------: | :-------------------------: | :-------------------------: |
@@ -195,7 +196,6 @@ Once you have selected the data source (API or CSV) you can choose:
 | `Relative Humidity` | Umidità Relativa | % |
 | `Wind Speed` | Velocità Vento | m/s |
 
-- province to filter the data by location (if no provinces are selected all are selected by default)
 
 ### Removing Outliers
 
