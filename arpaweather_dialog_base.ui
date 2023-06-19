@@ -772,7 +772,7 @@
         <widget class="QLabel" name="label_6">
          <property name="minimumSize">
           <size>
-           <width>300</width>
+           <width>0</width>
            <height>0</height>
           </size>
          </property>
@@ -848,7 +848,7 @@
         <widget class="QLabel" name="label_14">
          <property name="minimumSize">
           <size>
-           <width>300</width>
+           <width>0</width>
            <height>0</height>
           </size>
          </property>
@@ -918,7 +918,7 @@
         <widget class="QLabel" name="label_16">
          <property name="minimumSize">
           <size>
-           <width>300</width>
+           <width>0</width>
            <height>0</height>
           </size>
          </property>
@@ -988,7 +988,7 @@
         <widget class="QLabel" name="label_22">
          <property name="minimumSize">
           <size>
-           <width>300</width>
+           <width>0</width>
            <height>0</height>
           </size>
          </property>
