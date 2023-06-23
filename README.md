@@ -225,12 +225,12 @@ These statistics are calculated based on the selected time range and sensor type
 |       `max`       |                                     Max of the variable                                     |
 |       `min`       |                                     Min of the variable                                     |
 |       `std`       |                              Standard deviation of the variable                              |
-|    `conteggio`    |                      Number of observations for statistics calculation                      |
+|    `conteggio`    |                      Number of observations used for statistics calculation                      |
 |    `tipologia`    |                              Type of sensor (e.g. temperature)                              |
 |  `unit_dimisura`  |                                   Measure Unit (e.g. °C)                                   |
 |    `idstazione`    |              Station ID (multiple sensors can be available at the same station)              |
 |   `nomestazione`   |                                     Name of the Station                                     |
-|      `quota`      |                                  Height of the station (m)                                  |
+|      `quota`      |                                  Height of the station (m s.l.m.) (m)                                  |
 |    `datastart`    |                        Start date of the time-series for that sensor                        |
 |     `storico`     | Indicates whether the sensor is historical or still working (S=historical, N=not historical) |
 |       `lng`       |                                          Longitude                                          |
