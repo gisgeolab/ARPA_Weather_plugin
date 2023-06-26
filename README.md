@@ -6,6 +6,6 @@ This repository contains a notebook that allows you to access ARPA Lombardia wea
 
 The notebook uses the Socrata API and the Sodapy Python library to access the ARPA data.
 
-More information of the data structure and functionalities are provided in the ARPA_functionalities notebook.
+More information of the data structure and functionalities are provided in the ARPA_Weather_functionalities notebook.
 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/capizziemanuele/ARPA_Weather_notebook.git/HEAD)
