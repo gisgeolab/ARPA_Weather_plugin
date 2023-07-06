@@ -483,7 +483,7 @@
             </font>
            </property>
            <property name="text">
-            <string>Sensor type:</string>
+            <string>Variable:</string>
            </property>
           </widget>
          </item>
