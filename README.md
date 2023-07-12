@@ -1,4 +1,5 @@
 # ARPA Weather - QGIS Plugin
+
 <br>
 <p align="center">
   <img src="icon.png" width="120"> <br>
@@ -9,19 +10,19 @@
 
 The ARPA Weather Sensors Plugin is a QGIS plugin designed to help users process time series data from weather sensors provided by the Regional Agency for Environmental Protection of Lombardy ([ARPA Lombardia](https://www.arpalombardia.it/Pages/Meteorologia/Osservazioni-e-Dati/Dati-in-tempo-reale.aspx)). With this plugin, you can easily import ARPA weather sensor data and process it using a variety of algorithms and methods available in QGIS.
 
-A notebook used for testing the plugin functionalities is provided in the [ARPA_Weather_notebook](https://github.com/gisgeolab/ARPA_Weather_plugin/tree/ARPA_Weather_Notebook) branch.
+> ⚠️ NOTE: Internet connection is required to request the data from Open Data Lombardia portal.
 
 ## Installation
 
 To use the ARPA Weather Sensors Plugin, you'll need to install a few libraries first. Specifically, you'll need to install [Sodapy](https://github.com/xmunoz/sodapy), [pandas](https://pandas.pydata.org/docs/index.html), and [dask](https://www.dask.org/).
 
-<b>Sodapy</b><br>
+`<b>`Sodapy`</b><br>`
 Sodapy is a Python library that provides a simple interface for accessing data from the Socrata Open Data API. In the context of the ARPA Weather Sensors Plugin, Sodapy is used to retrieve data from the ARPA Lombardia weather sensors.
 
-<b>pandas</b><br>
+`<b>`pandas`</b><br>`
 pandas is a powerful data analysis library for Python. It provides data structures for efficiently storing and manipulating large datasets, as well as tools for working with missing data, time series data, and more. In the context of the ARPA Weather Sensors Plugin, pandas is used to process and analyze the weather sensor data.
 
-<b>dask</b><br>
+`<b>`dask`</b><br>`
 dask is a flexible parallel computing library for Python. It allows you to process large datasets in parallel, using a variety of distributed computing strategies. In the context of the ARPA Weather Sensors Plugin, dask is used to speed up the processing of large weather sensor CSV datasets.
 
 ### Windows
@@ -130,14 +131,14 @@ Install pip (if you don't already have it) using the Terminal:
 
 ---
 
-> :warning: NOTE: It may be required to restart QGIS after installing all the packages.
+> ⚠️ NOTE: It may be required to restart QGIS after installing all the packages.
 
 ---
 
 Now you can open QGIS and do the following step:
 Go to `Plugins` → `Manage and Install plugins` → `Settings` → `Show also experimental plugins`
 
-To use the ARPA Weather Sensors Plugin, you can install it as a ZIP file. Here's how:
+To use the **ARPA Weather** plugin, you can install it as a ZIP file. Here's how:
 
 1. Download the plugin ZIP file from the GitHub repository from the green box in the top right corner `Code` → `Download ZIP`
 2. Open QGIS and go to `Plugins` → `Manage and Install Plugins`...
@@ -150,11 +151,12 @@ Be sure to have the ARPA Weather Plugin enabled in your installed plugins.
 Once you've installed and enabled the plugin, you can use it to process ARPA Lombardia weather data.
 
 ---
-## Plugin Structure
-The following image summarize the plugin functionalities:<br>
-<br>
-![Plugin Structure](plugin_structure.png)
 
+## Plugin Structure
+
+The following image summarize the plugin functionalities:`<br>`
+
+![Plugin Structure](plugin_structure.png)
 
 ## Usage
 
@@ -174,7 +176,7 @@ You can easily select your preferred data source at the beginning of the process
 **Notes**
 
 - This plugin does not require an API token, but it might be necessary in future to access all datasets on Open Data Lombardia on Socrata API without any limitations (the use of the token has been left intentionally optional for this reason)
-- Only dates within the same year can be processed, as the size of the CSV files is around 2GB and processing multiple years together might be computationally intensive for common hardwares
+- Only dates within the same year can be processed at the same time, as the size of the CSV files is around 2GB and processing multiple years together might be computationally intensive for common hardwares
 - When QGIS is closed, all downloaded CSV files are deleted (to avoid to fill your PC memory). These files are stored in the `tmp` folder inside the plugin directory, and a link to the folder is provided inside the plugin
 - If the CSV file for the selected year is already available inside the `tmp` folder, the corresponding CSV folder won't be downloaded
 - Sensor information (e.g. sensors id, stations id, location etc.) are obtained using the Socrata API.
@@ -187,17 +189,19 @@ Once you have selected the data source (API or CSV) you can choose:
 - province to filter the data by location (if no provinces are selected all are selected by default)
 - weather sensor type you are interested in (e.g. temperature, precipitation etc.). The following table describes the available sensors names:
 
-| Sensor Type | Sensor name | Unit |
-| :------------------: | :-------------------------: | :-------------------------: |
-| `Snow Depth` | Altezza Neve | cm |
-| `Wind Direction` | Direzione Vento | Degree North |
-| `Water Level` | Livello Idrometrico | cm |
-| `Rainfall` | Precipitazione | mm |
-| `Global Radiation` | Radiazione Globale | W/m<sup>2</sup> |
-| `Temperature` | Temperatura | <sup>°</sup>C |
-| `Relative Humidity` | Umidità Relativa | % |
-| `Wind Speed` | Velocità Vento | m/s |
+|      Sensor Type      |     Sensor name     |          Unit          |
+| :-------------------: | :-----------------: | :---------------------: |
+|    `Snow Depth`    |    Altezza Neve    |           cm           |
+|  `Wind Direction`  |   Direzione Vento   |      Degree North      |
+|    `Water Level`    | Livello Idrometrico |           cm           |
+|     `Rainfall`     |   Precipitazione   |           mm           |
+| `Global Radiation` | Radiazione Globale | W/m`<sup>`2`</sup>` |
+|    `Temperature`    |     Temperatura     | `<sup>`°`</sup>`C |
+| `Relative Humidity` |  Umidità Relativa  |            %            |
+|    `Wind Speed`    |   Velocità Vento   |           m/s           |
 
+> Note: Legend: -9999 = missing data 888, 8888 = variable wind direction 777, 7777 = calm wind condition (for wind direction only).
+> You can find more information and metadata relative to the variables on [Open Data Lombardia website - Dati sensori meteo](https://www.dati.lombardia.it/Ambiente/Dati-sensori-meteo/i95f-5avh).
 
 ### Removing Outliers
 
@@ -223,20 +227,20 @@ These statistics are calculated based on the selected time range and sensor type
 |     Column Name     |                                   Information description                                   |
 | :------------------: | :------------------------------------------------------------------------------------------: |
 |    `idsensore`    |                                       ID of the sensor                                       |
-| `media` / `moda` |           Average of the variable (or mode is used if Wind Direction is requested)           |
-|       `max`       |                                     Max of the variable                                     |
-|       `min`       |                                     Min of the variable                                     |
-|       `std`       |                              Standard deviation of the variable                              |
-|    `conteggio`    |                      Number of observations used for statistics calculation                      |
 |    `tipologia`    |                              Type of sensor (e.g. temperature)                              |
 |  `unit_dimisura`  |                                   Measure Unit (e.g. °C)                                   |
 |    `idstazione`    |              Station ID (multiple sensors can be available at the same station)              |
 |   `nomestazione`   |                                     Name of the Station                                     |
-|      `quota`      |                                  Height of the station (m s.l.m.) (m)                                  |
+|      `quota`      |                             Height of the station (m s.l.m.) (m)                             |
 |    `datastart`    |                        Start date of the time-series for that sensor                        |
 |     `storico`     | Indicates whether the sensor is historical or still working (S=historical, N=not historical) |
 |       `lng`       |                                          Longitude                                          |
 |       `lat`       |                                           Latitude                                           |
+| `media` / `moda` |           Average of the variable (or mode is used if Wind Direction is requested)           |
+|       `max`       |                                     Max of the variable (not available with wind direction)                                     |
+|       `min`       |                                     Min of the variable (not available with wind direction)                                    |
+|       `std`       |                              Standard deviation of the variable (not available with wind direction)                              |
+|    `conteggio`    |                    Number of observations used for statistics calculation                    |
 
 The plugin generates a temporary layer named with sensor type and the time range used in the processing step, for example `Temperatura (2023-03-01 00:00:00 / 2023-03-31 05:50:00)`.
 
@@ -244,7 +248,7 @@ The plugin allows to optionally export multiples additional files. The following
 
 - Attribute table containing sensors information
 - Time-series containing observations for the selected sensors in the time-range. The exported file contains dates and sensors IDs already ordered by increasing sensor number and date
-- Sensors information (e.g. sensor id, station id, location etc.) inside the selected provinces. Sensors that are not functional anymore (Storico=S) are exported as well for completeness
+- Sensors information (e.g. sensor id, station id, location etc.) inside the selected provinces. Sensors that are not functional anymore (Storico=S) are exported as well for completeness (they might be useful for other analyses)
 - Time-series containing dates and observations for the selected sensors in the time-range, merged with sensors information.
 
 ## Project LCZ-ODC
@@ -253,6 +257,23 @@ The plugin is being developed within the LCZ-ODC project (agreement n. 2022-30-H
 
 Released under MIT license.
 
-### Author
+### ARPA Weather Plugin Author
 
-Emanuele Capizzi - E-mail: emanuele.capizzi@polimi.it
+- `<b>`*Emanuele Capizzi*`</b>`  (emanuele.capizzi@polimi.it)
+
+### Contacts - LCZ-ODC Project
+
+Politecnico di Milano DICA Team:
+
+- `<b>`*Maria Antonia Brovelli*`</b>` (maria.brovelli@polimi.it)
+- `<b>`*Barbara Betti*`</b>` (barbara.betti@polimi.it)
+- `<b>`*Giovanna Venuti*`</b>` (giovanna.venuti@polimi.it)
+- `<b>`*Daniele Oxoli*`</b>` (daniele.oxoli@polimi.it)
+- `<b>`*Alberto Vavassori*`</b>` (alberto.vavassori@polimi.it)
+- `<b>`*Jesus Rodrigo Cedeno Jimenez*`</b>` (jesusrodrigo.cedeno@polimi.it)
+
+Italian Space Agency (ASI) Team:
+
+- `<b>`*Deodato Tapete*`</b>` (deodato.tapete@asi.it)
+- `<b>`*Mario Siciliani de Cumis*`</b>` (mario.sicilianidecumis@asi.it)
+- `<b>`*Patrizia Sacco*`</b>` (patrizia.sacco@asi.it)

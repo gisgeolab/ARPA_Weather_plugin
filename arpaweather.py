@@ -960,25 +960,19 @@ class ARPAweather:
                 if sensor_sel != "Direzione Vento":
                     merged_df.round({'media': 1, 'max': 1, 'min': 1, 'std': 1})
                     
-                    layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("media", QVariant.Double, 'double', 10, 1), QgsField("max", QVariant.Double, 'double', 10, 1),
-                                                        QgsField("min", QVariant.Double, 'double', 10, 1), QgsField("std", QVariant.Double, 'double', 10, 1), QgsField("conteggio", QVariant.Int),
-                                                        QgsField("tipologia", QVariant.String),
-                                                        QgsField("unit_dimisura", QVariant.String), QgsField("idstazione", QVariant.Int),
-                                                        QgsField("nomestazione", QVariant.String), QgsField("quota", QVariant.Double),
-                                                        QgsField("provincia", QVariant.String), QgsField("datastart", QVariant.String),
-                                                        QgsField("storico", QVariant.String),
-                                                        QgsField("lng", QVariant.Double), QgsField("lat", QVariant.Double)])
+                    layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("tipologia", QVariant.String), QgsField("unit_dimisura", QVariant.String), QgsField("idstazione", QVariant.Int),
+                                                        QgsField("nomestazione", QVariant.String), QgsField("quota", QVariant.Double), QgsField("provincia", QVariant.String), QgsField("datastart", QVariant.String),
+                                                        QgsField("storico", QVariant.String), QgsField("lng", QVariant.Double), QgsField("lat", QVariant.Double), QgsField("media", QVariant.Double, 'double', 10, 1), QgsField("max", QVariant.Double, 'double', 10, 1),
+                                                        QgsField("min", QVariant.Double, 'double', 10, 1), QgsField("std", QVariant.Double, 'double', 10, 1), QgsField("conteggio", QVariant.Int)])
+                    
                 
                 if sensor_sel == "Direzione Vento":
                     merged_df.round({'moda': 0})
                     
-                    layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int), QgsField("moda", QVariant.Double,'double', 10, 0), QgsField("conteggio", QVariant.Int),
-                                                        QgsField("tipologia", QVariant.String),
-                                                        QgsField("unit_dimisura", QVariant.String), QgsField("idstazione", QVariant.Int),
-                                                        QgsField("nomestazione", QVariant.String), QgsField("quota", QVariant.Double),
-                                                        QgsField("provincia", QVariant.String), QgsField("datastart", QVariant.String),
-                                                        QgsField("storico", QVariant.String),
-                                                        QgsField("lng", QVariant.Double), QgsField("lat", QVariant.Double)])
+                    layer.dataProvider().addAttributes([QgsField("idsensore", QVariant.Int),
+                                                        QgsField("tipologia", QVariant.String), QgsField("unit_dimisura", QVariant.String), QgsField("idstazione", QVariant.Int), QgsField("nomestazione", QVariant.String), QgsField("quota", QVariant.Double),
+                                                        QgsField("provincia", QVariant.String), QgsField("datastart", QVariant.String), QgsField("storico", QVariant.String),
+                                                        QgsField("lng", QVariant.Double), QgsField("lat", QVariant.Double), QgsField("moda", QVariant.Double,'double', 10, 0), QgsField("conteggio", QVariant.Int)])
 
                 # Update fields and start editing
                 layer.updateFields()
@@ -991,12 +985,12 @@ class ARPAweather:
                         point = QgsPointXY(row['lng'], row['lat'])
                         feature = QgsFeature()
                         feature.setGeometry(QgsGeometry.fromPointXY(point))
-                        feature.setAttributes([QVariant(row['idsensore']), QVariant(row['mean']), QVariant(row['max']),
-                                            QVariant(row['min']), QVariant(row['std']), QVariant(row['count']),
+                        feature.setAttributes([QVariant(row['idsensore']),
                                             QVariant(row['tipologia']), QVariant(row['unit_dimisura']),
                                             QVariant(row['idstazione']), QVariant(row['nomestazione']),
                                             QVariant(row['quota']), QVariant(row['provincia']), QVariant(row['datastart']), 
-                                            QVariant(row['storico']), QVariant(row['lng']), QVariant(row['lat'])])
+                                            QVariant(row['storico']), QVariant(row['lng']), QVariant(row['lat']), QVariant(row['mean']), QVariant(row['max']),
+                                            QVariant(row['min']), QVariant(row['std']), QVariant(row['count'])])
                         features.append(feature)
                 
                 if sensor_sel == "Direzione Vento":         # If wind direction sensor is selected
@@ -1004,11 +998,11 @@ class ARPAweather:
                         point = QgsPointXY(row['lng'], row['lat'])
                         feature = QgsFeature()
                         feature.setGeometry(QgsGeometry.fromPointXY(point))
-                        feature.setAttributes([QVariant(row['idsensore']), QVariant(round(row['mode'])), QVariant(row['count']),
+                        feature.setAttributes([QVariant(row['idsensore']),
                                             QVariant(row['tipologia']), QVariant(row['unit_dimisura']),
                                             QVariant(row['idstazione']), QVariant(row['nomestazione']),
                                             QVariant(row['quota']), QVariant(row['provincia']), QVariant(row['datastart']), 
-                                            QVariant(row['storico']), QVariant(row['lng']), QVariant(row['lat'])])
+                                            QVariant(row['storico']), QVariant(row['lng']), QVariant(row['lat']),QVariant(round(row['mode'])), QVariant(row['count'])])
                         features.append(feature)
 
                 # Add features and commit changes
@@ -1022,6 +1016,23 @@ class ARPAweather:
                 # EXPORT - Save file as csv
                 filename = self.dlg.leOutputFileName.text()
                 context = QgsProject.instance().transformContext()
+                beginning_columns = ['idsensore', 'tipologia', 'unit_dimisura',	'idstazione', 'nomestazione', 'quota', 'provincia', 'datastart', 'storico', 'lng', 'lat', 'datastop']
+                remaining_columns = [col for col in merged_df.columns if col not in beginning_columns]
+                new_order = beginning_columns + remaining_columns
+                merged_df = merged_df[new_order]
+                
+                # Create a dictionary to define the column name mappings
+                if sensor_sel != "Direzione Vento": 
+                    column_mappings = {'mean': 'media', 'count': 'conteggio'}
+
+                    # Rename the columns using the dictionary
+                    merged_df = merged_df.rename(columns=column_mappings)
+                
+                if sensor_sel == "Direzione Vento": 
+                    column_mappings = {'mode': 'moda', 'count': 'conteggio'}
+
+                    # Rename the columns using the dictionary
+                    merged_df = merged_df.rename(columns=column_mappings)
 
                 if filename != "":
                     try:
