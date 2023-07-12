@@ -16,13 +16,13 @@ The ARPA Weather Sensors Plugin is a QGIS plugin designed to help users process 
 
 To use the ARPA Weather Sensors Plugin, you'll need to install a few libraries first. Specifically, you'll need to install [Sodapy](https://github.com/xmunoz/sodapy), [pandas](https://pandas.pydata.org/docs/index.html), and [dask](https://www.dask.org/).
 
-`<b>`Sodapy`</b><br>`
+<b>Sodapy</b>
 Sodapy is a Python library that provides a simple interface for accessing data from the Socrata Open Data API. In the context of the ARPA Weather Sensors Plugin, Sodapy is used to retrieve data from the ARPA Lombardia weather sensors.
 
-`<b>`pandas`</b><br>`
+<b>pandas</b>
 pandas is a powerful data analysis library for Python. It provides data structures for efficiently storing and manipulating large datasets, as well as tools for working with missing data, time series data, and more. In the context of the ARPA Weather Sensors Plugin, pandas is used to process and analyze the weather sensor data.
 
-`<b>`dask`</b><br>`
+<b>dask</b>
 dask is a flexible parallel computing library for Python. It allows you to process large datasets in parallel, using a variety of distributed computing strategies. In the context of the ARPA Weather Sensors Plugin, dask is used to speed up the processing of large weather sensor CSV datasets.
 
 ### Windows
@@ -176,8 +176,8 @@ You can easily select your preferred data source at the beginning of the process
 **Notes**
 
 - This plugin does not require an API token, but it might be necessary in future to access all datasets on Open Data Lombardia on Socrata API without any limitations (the use of the token has been left intentionally optional for this reason)
-- Only dates within the same year can be processed at the same time, as the size of the CSV files is around 2GB and processing multiple years together might be computationally intensive for common hardwares
-- When QGIS is closed, all downloaded CSV files are deleted (to avoid to fill your PC memory). These files are stored in the `tmp` folder inside the plugin directory, and a link to the folder is provided inside the plugin
+- Only dates within the same year can be processed at the same time, as the size of the CSV files is around **2GB** and processing multiple years together might be computationally intensive for common hardwares
+- **When QGIS is closed, all downloaded CSV files are deleted** (to avoid to fill your PC memory). These files are stored in the `tmp` folder inside the plugin directory, and a link to the folder is provided inside the plugin
 - If the CSV file for the selected year is already available inside the `tmp` folder, the corresponding CSV folder won't be downloaded
 - Sensor information (e.g. sensors id, stations id, location etc.) are obtained using the Socrata API.
 
@@ -253,27 +253,27 @@ The plugin allows to optionally export multiples additional files. The following
 
 ## Project LCZ-ODC
 
-The plugin is being developed within the LCZ-ODC project (agreement n. 2022-30-HH.0) funded by the Italian Space Agency (ASI) and Politecnico di Milano, which aims to identify Local Climate Zones within the Metropolitan City of Milan.
+The plugin is being developed within the [LCZ-ODC project](https://www.asi.it/2023/05/i4dp_science-primi-traguardi-del-progetto-lcz-odc/) (agreement n. 2022-30-HH.0) funded by the Italian Space Agency (ASI) and Politecnico di Milano, which aims to identify Local Climate Zones within the Metropolitan City of Milan.
 
 Released under MIT license.
 
 ### ARPA Weather Plugin Author
 
-- `<b>`*Emanuele Capizzi*`</b>`  (emanuele.capizzi@polimi.it)
+- <b>*Emanuele Capizzi*</b>  (emanuele.capizzi@polimi.it)
 
 ### Contacts - LCZ-ODC Project
 
 Politecnico di Milano DICA Team:
 
-- `<b>`*Maria Antonia Brovelli*`</b>` (maria.brovelli@polimi.it)
-- `<b>`*Barbara Betti*`</b>` (barbara.betti@polimi.it)
-- `<b>`*Giovanna Venuti*`</b>` (giovanna.venuti@polimi.it)
-- `<b>`*Daniele Oxoli*`</b>` (daniele.oxoli@polimi.it)
-- `<b>`*Alberto Vavassori*`</b>` (alberto.vavassori@polimi.it)
-- `<b>`*Jesus Rodrigo Cedeno Jimenez*`</b>` (jesusrodrigo.cedeno@polimi.it)
+- <b>*Maria Antonia Brovelli*</b> (maria.brovelli@polimi.it)
+- <b>*Barbara Betti*</b> (barbara.betti@polimi.it)
+- <b>*Giovanna Venuti*</b> (giovanna.venuti@polimi.it)
+- <b>*Daniele Oxoli*</b> (daniele.oxoli@polimi.it)
+- <b>*Alberto Vavassori*</b> (alberto.vavassori@polimi.it)
+- <b>*Jesus Rodrigo Cedeno Jimenez*</b> (jesusrodrigo.cedeno@polimi.it)
 
 Italian Space Agency (ASI) Team:
 
-- `<b>`*Deodato Tapete*`</b>` (deodato.tapete@asi.it)
-- `<b>`*Mario Siciliani de Cumis*`</b>` (mario.sicilianidecumis@asi.it)
-- `<b>`*Patrizia Sacco*`</b>` (patrizia.sacco@asi.it)
+- <b>*Deodato Tapete*</b> (deodato.tapete@asi.it)
+- <b>*Mario Siciliani de Cumis*</b> (mario.sicilianidecumis@asi.it)
+- <b>*Patrizia Sacco*</b> (patrizia.sacco@asi.it)
