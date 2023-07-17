@@ -231,7 +231,7 @@ These statistics are calculated based on the selected time range and sensor type
 |  `unit_dimisura`  |                                   Measure Unit (e.g. °C)                                   |
 |    `idstazione`    |              Station ID (multiple sensors can be available at the same station)              |
 |   `nomestazione`   |                                     Name of the Station                                     |
-|      `quota`      |                             Orthometric eight of the station (above sea leve) (m)                             |
+|      `quota`      |                             Orthometric height of the station (above sea leve) (m)                             |
 |    `datastart`    |                        Start date of the time-series for that sensor                        |
 |     `storico`     | Indicates whether the sensor is historical or still working (S=historical, N=not historical) |
 |       `lng`       |                                          Longitude                                          |
