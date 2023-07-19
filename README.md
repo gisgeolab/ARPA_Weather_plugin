@@ -108,7 +108,7 @@ Install pip (if you don't already have it) using the Terminal:
 2. Type the following command to import pip:
 
 ```
->> import pip 
+>> import pip
 ```
 
 3. Type the following command to install Sodapy:
@@ -189,16 +189,16 @@ Once you have selected the data source (API or CSV) you can choose:
 - province to filter the data by location (if no provinces are selected all are selected by default)
 - weather sensor type you are interested in (e.g. temperature, precipitation etc.). The following table describes the available sensors names:
 
-|      Sensor Type      |     Sensor name     |          Unit          |
-| :-------------------: | :-----------------: | :---------------------: |
-|    `Snow Depth`    |    Altezza Neve    |           cm           |
-|  `Wind Direction`  |   Direzione Vento   |      Degree North      |
-|    `Water Level`    | Livello Idrometrico |           cm           |
-|     `Rainfall`     |   Precipitazione   |           mm           |
-| `Global Radiation` | Radiazione Globale | W/m`<sup>`2`</sup>` |
-|    `Temperature`    |     Temperatura     | `<sup>`°`</sup>`C |
-| `Relative Humidity` |  Umidità Relativa  |            %            |
-|    `Wind Speed`    |   Velocità Vento   |           m/s           |
+|     Sensor Type     |     Sensor name     |      Unit       |
+| :-----------------: | :-----------------: | :-------------: |
+|    `Snow Depth`     |    Altezza Neve     |       cm        |
+|  `Wind Direction`   |   Direzione Vento   |  Degree North   |
+|    `Water Level`    | Livello Idrometrico |       cm        |
+|     `Rainfall`      |   Precipitazione    |       mm        |
+| `Global Radiation`  | Radiazione Globale  | W/m<sup>2</sup> |
+|    `Temperature`    |     Temperatura     |  <sup>°</sup>C  |
+| `Relative Humidity` |  Umidità Relativa   |        %        |
+|    `Wind Speed`     |   Velocità Vento    |       m/s       |
 
 > Note: Legend: -9999 = missing data 888, 8888 = variable wind direction 777, 7777 = calm wind condition (for wind direction only).
 > You can find more information and metadata relative to the variables on [Open Data Lombardia website - Dati sensori meteo](https://www.dati.lombardia.it/Ambiente/Dati-sensori-meteo/i95f-5avh).
@@ -224,23 +224,23 @@ These statistics are calculated based on the selected time range and sensor type
 
 **Map layer attributes**
 
-|     Column Name     |                                   Information description                                   |
-| :------------------: | :------------------------------------------------------------------------------------------: |
-|    `idsensore`    |                                       ID of the sensor                                       |
-|    `tipologia`    |                              Type of sensor (e.g. temperature)                              |
-|  `unit_dimisura`  |                                   Measure Unit (e.g. °C)                                   |
-|    `idstazione`    |              Station ID (multiple sensors can be available at the same station)              |
-|   `nomestazione`   |                                     Name of the Station                                     |
-|      `quota`      |                             Orthometric height of the station (above sea level) (m)                             |
-|    `datastart`    |                        Start date of the time-series for that sensor                        |
-|     `storico`     | Indicates whether the sensor is historical or still working (S=historical, N=not historical) |
-|       `lng`       |                                          Longitude                                          |
-|       `lat`       |                                           Latitude                                           |
+|   Column Name    |                                   Information description                                    |
+| :--------------: | :------------------------------------------------------------------------------------------: |
+|   `idsensore`    |                                       ID of the sensor                                       |
+|   `tipologia`    |                              Type of sensor (e.g. temperature)                               |
+| `unit_dimisura`  |                                    Measure Unit (e.g. °C)                                    |
+|   `idstazione`   |              Station ID (multiple sensors can be available at the same station)              |
+|  `nomestazione`  |                                     Name of the Station                                      |
+|     `quota`      |                   Orthometric height of the station (above sea level) (m)                    |
+|   `datastart`    |                        Start date of the time-series for that sensor                         |
+|    `storico`     | Indicates whether the sensor is historical or still working (S=historical, N=not historical) |
+|      `lng`       |                                          Longitude                                           |
+|      `lat`       |                                           Latitude                                           |
 | `media` / `moda` |           Average of the variable (or mode is used if Wind Direction is requested)           |
-|       `max`       |                                     Max of the variable (not available with wind direction)                                     |
-|       `min`       |                                     Min of the variable (not available with wind direction)                                    |
-|       `std`       |                              Standard deviation of the variable (not available with wind direction)                              |
-|    `conteggio`    |                    Number of observations used for statistics calculation                    |
+|      `max`       |                   Max of the variable (not available with wind direction)                    |
+|      `min`       |                   Min of the variable (not available with wind direction)                    |
+|      `std`       |            Standard deviation of the variable (not available with wind direction)            |
+|   `conteggio`    |                    Number of observations used for statistics calculation                    |
 
 The plugin generates a temporary layer named with sensor type and the time range used in the processing step, for example `Temperatura (2023-03-01 00:00:00 / 2023-03-31 05:50:00)`.
 
@@ -259,21 +259,21 @@ Released under MIT license.
 
 ### ARPA Weather Plugin Author
 
-- <b>*Emanuele Capizzi*</b>  (emanuele.capizzi@polimi.it)
+- <b>_Emanuele Capizzi_</b> (emanuele.capizzi@polimi.it)
 
 ### Contacts - LCZ-ODC Project
 
 Politecnico di Milano DICA Team:
 
-- <b>*Maria Antonia Brovelli*</b> (maria.brovelli@polimi.it)
-- <b>*Barbara Betti*</b> (barbara.betti@polimi.it)
-- <b>*Giovanna Venuti*</b> (giovanna.venuti@polimi.it)
-- <b>*Daniele Oxoli*</b> (daniele.oxoli@polimi.it)
-- <b>*Alberto Vavassori*</b> (alberto.vavassori@polimi.it)
-- <b>*Jesus Rodrigo Cedeno Jimenez*</b> (jesusrodrigo.cedeno@polimi.it)
+- <b>_Maria Antonia Brovelli_</b> (maria.brovelli@polimi.it)
+- <b>_Barbara Betti_</b> (barbara.betti@polimi.it)
+- <b>_Giovanna Venuti_</b> (giovanna.venuti@polimi.it)
+- <b>_Daniele Oxoli_</b> (daniele.oxoli@polimi.it)
+- <b>_Alberto Vavassori_</b> (alberto.vavassori@polimi.it)
+- <b>_Jesus Rodrigo Cedeno Jimenez_</b> (jesusrodrigo.cedeno@polimi.it)
 
 Italian Space Agency (ASI) Team:
 
-- <b>*Deodato Tapete*</b> (deodato.tapete@asi.it)
-- <b>*Mario Siciliani de Cumis*</b> (mario.sicilianidecumis@asi.it)
-- <b>*Patrizia Sacco*</b> (patrizia.sacco@asi.it)
+- <b>_Deodato Tapete_</b> (deodato.tapete@asi.it)
+- <b>_Mario Siciliani de Cumis_</b> (mario.sicilianidecumis@asi.it)
+- <b>_Patrizia Sacco_</b> (patrizia.sacco@asi.it)
