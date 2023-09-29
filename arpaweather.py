@@ -395,12 +395,13 @@ class ARPAweather:
         time_series = client.get(weather_sensor_id, query=query)
 
         # Create dataframe
-        df = pd.DataFrame(time_series, columns=['idsensore', 'data', 'valore'])
+        df = pd.DataFrame(time_series, columns=['idsensore', 'data', 'valore', 'idoperatore'])
 
         # Convert types
         df['valore'] = df['valore'].astype('float32')
         df['idsensore'] = df['idsensore'].astype('int32')
         df['data'] = pd.to_datetime(df['data'])
+        df['idoperatore'] = df['idoperatore'].astype('float32')
 
         # Filter with selected sensors list
         df = df[df['valore'] != -9999]
