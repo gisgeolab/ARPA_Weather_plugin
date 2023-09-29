@@ -201,7 +201,8 @@ Once you have selected the data source (API or CSV) you can choose:
 |    `Wind Speed`     |   Velocità Vento    |       m/s       |
 
 > Note: Legend: -9999 = missing data 888, 8888 = variable wind direction 777, 7777 = calm wind condition (for wind direction only).
-> You can find more information and metadata relative to the variables on [Open Data Lombardia website - Dati sensori meteo](https://www.dati.lombardia.it/Ambiente/Dati-sensori-meteo/i95f-5avh).
+> For `idoperatore` column: Average value 3: maximum value 4: Cumulated value (for rain)
+> You can find more detailed information and metadata relative to the variables on [Open Data Lombardia website - Dati sensori meteo](https://www.dati.lombardia.it/Ambiente/Dati-sensori-meteo/i95f-5avh).
 
 ### Removing Outliers
 
