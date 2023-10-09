@@ -140,7 +140,7 @@ Go to `Plugins` → `Manage and Install plugins` → `Settings` → `Show also e
 
 To use the **ARPA Weather** plugin, you can install it as a ZIP file. Here's how:
 
-1. Download the plugin ZIP file from the GitHub repository from the green box in the top right corner `Code` → `Download ZIP`
+1. Download the plugin ZIP file from the GitHub repository from the green box in the top right corner `<>Code` → `Download ZIP`
 2. Open QGIS and go to `Plugins` → `Manage and Install Plugins`...
 3. In the `Manage and Install Plugins` dialog box, click on the `Install from ZIP` tab
 4. Click the `...` button to browse to the location where you saved the plugin ZIP file, then click `Install Plugin`
