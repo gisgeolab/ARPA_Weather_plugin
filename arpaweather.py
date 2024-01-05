@@ -355,8 +355,10 @@ class ARPAweather:
                 end_API_date = min_max_dates['MAX_data']
 
                 # Convert the date strings to datetime objects
-                start_API_date = datetime.strptime(start_API_date, "%Y-%m-%dT%H:%M:%S.%f")
+                #start_API_date = datetime.strptime(start_API_date, "%Y-%m-%dT%H:%M:%S.%f")
                 end_API_date = datetime.strptime(end_API_date, "%Y-%m-%dT%H:%M:%S.%f")
+
+                start_API_date = datetime(end_API_date.year, end_API_date.month, 1, 0, 0, 0)
 
                 return start_API_date, end_API_date
 
