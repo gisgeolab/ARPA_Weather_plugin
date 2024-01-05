@@ -59,6 +59,7 @@ sensors_types = ["Altezza Neve", "Direzione Vento", "Livello Idrometrico", "Prec
 
 # Dictionary that maps the zip files to be downloaded from Open Data Lombardia for each year
 switcher = {
+            '2024': "",
             '2023': "https://www.dati.lombardia.it/download/48xr-g9b9/application%2Fzip",
             '2022': "https://www.dati.lombardia.it/download/mvvc-nmzv/application%2Fzip",
             '2021': "https://www.dati.lombardia.it/download/49n9-866s/application%2Fzip",
@@ -378,7 +379,7 @@ class ARPAweather:
             pandas.DataFrame: dataframe with idsensore, data and valore of the weather sensors within the specific time period
         """
         # Select the Open Data Lombardia Meteo sensors dataset
-        weather_sensor_id = "647i-nhxk"
+        weather_sensor_id = "i95f-5avh"
 
         # Convert to string in year-month-day format, accepted by ARPA query
         start_date = start_date.strftime("%Y-%m-%dT%H:%M:%S.%f")
@@ -604,7 +605,10 @@ class ARPAweather:
         # If the selected year is the current year, set the minimum date to the beginning of the year and the maximum date to the end of the previous month
         if sel_year == int(today.year):
             csv_cal_start_date = datetime(sel_year, 1, 1, 0, 0, 0)
-            csv_cal_end_date = datetime(sel_year, today.month-1, last_day_of_prev_month.day, 23, 59, 0)
+            if today.month != 1:
+                csv_cal_end_date = datetime(sel_year, today.month-1, last_day_of_prev_month.day, 23, 59, 0)
+            else:
+                csv_cal_end_date = datetime(sel_year, 1, last_day_of_prev_month.day, 23, 59, 0)
         else: 
             csv_cal_start_date = datetime(sel_year, 1, 1, 0, 0, 0)
             csv_cal_end_date = datetime(sel_year, 12, 31, 23, 59, 0)
@@ -642,9 +646,13 @@ class ARPAweather:
             
             # Delimit selectable dates 
             # For current year CSV let select only dates up to the previous month
-            if sel_year == int(today.year):
-                csv_cal_start_date = datetime(sel_year, 1, 1, 0, 0, 0)
-                csv_cal_end_date = datetime(sel_year, today.month-1, last_day_of_prev_month.day, 23, 59, 0) # minus 1 to get the previous month with respect to current one
+        if sel_year == int(today.year):
+            csv_cal_start_date = datetime(sel_year, 1, 1, 0, 0, 0)
+            # minus 1 to get the previous month with respect to current one
+            if today.month != 1:
+                csv_cal_end_date = datetime(sel_year, today.month-1, last_day_of_prev_month.day, 23, 59, 0)
+            else:
+                csv_cal_end_date = datetime(sel_year, 1, last_day_of_prev_month.day, 23, 59, 0)
             else: 
                 csv_cal_start_date = datetime(sel_year, 1, 1, 0, 0, 0)
                 csv_cal_end_date = datetime(sel_year, 12, 31, 23, 59, 0)
