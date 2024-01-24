@@ -10,7 +10,7 @@
 
 The ARPA Weather Sensors Plugin is a QGIS plugin designed to help users process time series data from weather sensors provided by the Regional Agency for Environmental Protection of Lombardy ([ARPA Lombardia](https://www.arpalombardia.it/Pages/Meteorologia/Osservazioni-e-Dati/Dati-in-tempo-reale.aspx)). With this plugin, you can easily import ARPA weather sensor data and process it using a variety of algorithms and methods available in QGIS.
 
-> ⚠️ NOTE: Internet connection is required to request the data from Open Data Lombardia portal.
+> ⚠️ NOTE: Internet connection is required to request the data from the Open Data Lombardia portal.
 
 ## Installation
 
@@ -20,10 +20,10 @@ To use the ARPA Weather Sensors Plugin, you'll need to install a few libraries f
 Sodapy is a Python library that provides a simple interface for accessing data from the Socrata Open Data API. In the context of the ARPA Weather Sensors Plugin, Sodapy is used to retrieve data from the ARPA Lombardia weather sensors.
 
 <b>pandas</b><br>
-pandas is a powerful data analysis library for Python. It provides data structures for efficiently storing and manipulating large datasets, as well as tools for working with missing data, time series data, and more. In the context of the ARPA Weather Sensors Plugin, pandas is used to process and analyze the weather sensor data.
+pandas is a powerful data analysis library for Python. It provides data structures for efficiently storing and manipulating large datasets, as well as tools for working with missing data, time series data, and more. In the context of the ARPA Weather Sensors Plugin, Pandas is used to process and analyze the weather sensor data.
 
 <b>dask</b><br>
-dask is a flexible parallel computing library for Python. It allows you to process large datasets in parallel, using a variety of distributed computing strategies. In the context of the ARPA Weather Sensors Plugin, dask is used to speed up the processing of large weather sensor CSV datasets.
+Dask is a flexible parallel computing library for Python. It allows you to process large datasets in parallel, using a variety of distributed computing strategies. In the context of the ARPA Weather Sensors Plugin, Dask is used to speed up the processing of large weather sensor CSV datasets.
 
 ### Windows
 
@@ -50,13 +50,13 @@ o4w_env
 >> python3 -m pip install sodapy -U --user
 ```
 
-5. Type the following command to install pandas (raccomended **>=1.5.3** version):
+5. Type the following command to install pandas (recommended **>=1.5.3** version):
 
 ```
 >> python3 -m pip install pandas -U --user
 ```
 
-6. Type the following command to install dask:
+6. Type the following command to install Dask:
 
 ```
 >> python3 -m pip install dask -U --user
@@ -83,13 +83,13 @@ py3_env
 >> python -m pip install sodapy
 ```
 
-5. Type the following command to install pandas (raccomended **>=1.5.3** version):
+5. Type the following command to install pandas (recommended **>=1.5.3** version):
 
 ```
 >> python -m pip install pandas
 ```
 
-6. Type the following command to install dask:
+6. Type the following command to install Dask:
 
 ```
 >> python -m pip install dask
@@ -123,7 +123,7 @@ Install pip (if you don't already have it) using the Terminal:
 >> pip.main(['install', 'pandas'])
 ```
 
-5. Type the following command to install dask:
+5. Type the following command to install Dask:
 
 ```
 >> pip.main(['install', 'dask'])
@@ -135,7 +135,8 @@ Install pip (if you don't already have it) using the Terminal:
 
 ---
 
-Now you can open QGIS and do the following step:
+Now you can open QGIS and do the following steps:
+
 Go to `Plugins` → `Manage and Install plugins` → `Settings` → `Show also experimental plugins`
 
 To use the **ARPA Weather** plugin, you can install it as a ZIP file. Here's how:
@@ -154,7 +155,7 @@ Once you've installed and enabled the plugin, you can use it to process ARPA Lom
 
 ## Plugin Structure
 
-The following image summarize the plugin functionalities:`<br>`
+The following image summarizes the plugin functionalities:`<br>`
 
 ![Plugin Structure](plugin_structure.png)
 
@@ -171,15 +172,15 @@ With this plugin, you have the flexibility to choose whether to retrieve data fr
 - **Socrata Open Data API** for the current month data
 - **CSV files** for past month/years data (archived data)
 
-You can easily select your preferred data source at the beginning of the process, and the plugin will automatically request data from the API or CSV files based on the selected date range. The CSV files are automatically downloaded by the plugin, and processed using the dask Python library.
+You can easily select your preferred data source at the beginning of the process, and the plugin will automatically request data from the API or CSV files based on the selected date range. The CSV files are automatically downloaded by the plugin, and processed using the Dask Python library.
 
 **Notes**
 
 - This plugin does not require an API token, but it might be necessary in future to access all datasets on Open Data Lombardia on Socrata API without any limitations (the use of the token has been left intentionally optional for this reason)
-- Only dates within the same year can be processed at the same time, as the size of the CSV files is around **2GB** and processing multiple years together might be computationally intensive for common hardwares
-- **When QGIS is closed, all downloaded CSV files are deleted** (to avoid to fill your PC memory). These files are stored in the `tmp` folder inside the plugin directory, and a link to the folder is provided inside the plugin
+- Only dates within the same year can be processed at the same time, as the size of the CSV files is around **2GB** and processing multiple years together might be computationally intensive for common hardware
+- **When QGIS is closed, all downloaded CSV files are deleted** (to avoid filling your PC memory). These files are stored in the `tmp` folder inside the plugin directory, and a link to the folder is provided inside the plugin
 - If the CSV file for the selected year is already available inside the `tmp` folder, the corresponding CSV folder won't be downloaded
-- Sensor information (e.g. sensors id, stations id, location etc.) are obtained using the Socrata API.
+- Sensor information (e.g. sensors id, stations id, location etc.) is obtained using the Socrata API.
 
 ### Selecting the Time Range and Sensor Type
 
@@ -187,7 +188,7 @@ Once you have selected the data source (API or CSV) you can choose:
 
 - time range for which you want to retrieve data (dates in the calendar are automatically limited to the correct time range based on the selected parameters)
 - province to filter the data by location (if no provinces are selected all are selected by default)
-- weather sensor type you are interested in (e.g. temperature, precipitation etc.). The following table describes the available sensors names:
+- weather sensor type you are interested in (e.g. temperature, precipitation etc.). The following table describes the names of the available sensors:
 
 |     Sensor Type     |     Sensor name     |      Unit       |
 | :-----------------: | :-----------------: | :-------------: |
@@ -245,7 +246,7 @@ These statistics are calculated based on the selected time range and sensor type
 
 The plugin generates a temporary layer named with sensor type and the time range used in the processing step, for example `Temperatura (2023-03-01 00:00:00 / 2023-03-31 05:50:00)`.
 
-The plugin allows to optionally export multiples additional files. The following is the list of exportable CSV files:
+The plugin allows to optionally export multiple additional files. The following is the list of exportable CSV files:
 
 - Attribute table containing sensors information
 - Time-series containing observations for the selected sensors in the time-range. The exported file contains dates and sensors IDs already ordered by increasing sensor number and date
