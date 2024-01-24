@@ -155,7 +155,7 @@ Once you've installed and enabled the plugin, you can use it to process ARPA Lom
 
 ## Plugin Structure
 
-The following image summarizes the plugin functionalities:`<br>`
+The following image summarizes the plugin functionalities:
 
 ![Plugin Structure](plugin_structure.png)
 
