@@ -631,23 +631,23 @@ class ARPAweather:
         self.dlg.dtEndTime.setDateTime(csv_cal_end_date)
         
     def update_CSV(self):
-            """
-            Updates the contents of the year combo box and the minimum and maximum dates of the date-time edit widgets in the dialog
-            based on the year selected in the combo box.
-            """
-            # Clear the year combo box and add the available years
-            self.dlg.cb_list_years.clear()
-            years_list = list(switcher.keys())
-            self.dlg.cb_list_years.addItems(years_list)
+        """
+        Updates the contents of the year combo box and the minimum and maximum dates of the date-time edit widgets in the dialog
+        based on the year selected in the combo box.
+        """
+        # Clear the year combo box and add the available years
+        self.dlg.cb_list_years.clear()
+        years_list = list(switcher.keys())
+        self.dlg.cb_list_years.addItems(years_list)
 
-            # Get the selected year from the combo box and the current date and last day of previous month
-            sel_year = int(self.dlg.cb_list_years.currentText())
-            today = datetime.today()
-            first_day_of_month = datetime(today.year, today.month, 1)
-            last_day_of_prev_month = first_day_of_month - timedelta(days=1)
+        # Get the selected year from the combo box and the current date and last day of previous month
+        sel_year = int(self.dlg.cb_list_years.currentText())
+        today = datetime.today()
+        first_day_of_month = datetime(today.year, today.month, 1)
+        last_day_of_prev_month = first_day_of_month - timedelta(days=1)
             
-            # Delimit selectable dates 
-            # For current year CSV let select only dates up to the previous month
+        # Delimit selectable dates 
+        # For current year CSV let select only dates up to the previous month
         if sel_year == int(today.year):
             csv_cal_start_date = datetime(sel_year, 1, 1, 0, 0, 0)
             # minus 1 to get the previous month with respect to current one
@@ -655,23 +655,23 @@ class ARPAweather:
                 csv_cal_end_date = datetime(sel_year, today.month-1, last_day_of_prev_month.day, 23, 59, 0)
             else:
                 csv_cal_end_date = datetime(sel_year, 1, last_day_of_prev_month.day, 23, 59, 0)
-            else: 
-                csv_cal_start_date = datetime(sel_year, 1, 1, 0, 0, 0)
-                csv_cal_end_date = datetime(sel_year, 12, 31, 23, 59, 0)
+        else: 
+            csv_cal_start_date = datetime(sel_year, 1, 1, 0, 0, 0)
+            csv_cal_end_date = datetime(sel_year, 12, 31, 23, 59, 0)
 
-            # Set the display format, calendar popup, minimum date, maximum date, start date, and end date of the date-time edit widgets
-            self.dlg.dtStartTime.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
-            self.dlg.dtEndTime.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
-            self.dlg.dtStartTime.setCalendarPopup(True)
-            self.dlg.dtEndTime.setCalendarPopup(True)
+        # Set the display format, calendar popup, minimum date, maximum date, start date, and end date of the date-time edit widgets
+        self.dlg.dtStartTime.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
+        self.dlg.dtEndTime.setDisplayFormat("dd-MM-yyyy HH:mm:ss")
+        self.dlg.dtStartTime.setCalendarPopup(True)
+        self.dlg.dtEndTime.setCalendarPopup(True)
 
-            self.dlg.dtStartTime.setMinimumDateTime(csv_cal_start_date)
-            self.dlg.dtStartTime.setMaximumDateTime(csv_cal_end_date)
-            self.dlg.dtEndTime.setMinimumDateTime(csv_cal_start_date)
-            self.dlg.dtEndTime.setMaximumDateTime(csv_cal_end_date)
+        self.dlg.dtStartTime.setMinimumDateTime(csv_cal_start_date)
+        self.dlg.dtStartTime.setMaximumDateTime(csv_cal_end_date)
+        self.dlg.dtEndTime.setMinimumDateTime(csv_cal_start_date)
+        self.dlg.dtEndTime.setMaximumDateTime(csv_cal_end_date)
 
-            self.dlg.dtStartTime.setDateTime(csv_cal_start_date)
-            self.dlg.dtEndTime.setDateTime(csv_cal_end_date)
+        self.dlg.dtStartTime.setDateTime(csv_cal_start_date)
+        self.dlg.dtEndTime.setDateTime(csv_cal_end_date)
     
     def outlier_filter_iqr(self, df):
         """
