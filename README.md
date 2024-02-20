@@ -95,7 +95,7 @@ py3_env
 >> python -m pip install dask
 ```
 
-### Linux
+### Linux and MacOS
 
 If you're using Linux, you can install these libraries using the QGIS Python Console. Here's how:
 Install pip (if you don't already have it) using the Terminal:
