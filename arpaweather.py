@@ -315,7 +315,7 @@ class ARPAweather:
         sensors_df["datastop"] = pd.to_datetime(sensors_df["datastop"])
 
         # Drop not relevant fields
-        sensors_df = sensors_df.drop(columns=["cgb_est", "cgb_nord", "location", ":@computed_region_6hky_swhk", ":@computed_region_ttgh_9sm5"])
+        sensors_df = sensors_df.drop(columns=["cgb_est", "cgb_nord", "location"]) #, ":@computed_region_6hky_swhk", ":@computed_region_ttgh_9sm5"])
         
         # Filter the sensors data by selected provinces
         if len(selected_provinces) == 0:
